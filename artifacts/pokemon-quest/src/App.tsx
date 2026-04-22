@@ -4,6 +4,8 @@ import HomeScreen from "@/screens/HomeScreen";
 import StarterScreen from "@/screens/StarterScreen";
 import AdventureScreen from "@/screens/AdventureScreen";
 import BattleScreen from "@/screens/BattleScreen";
+import EncounterScreen from "@/screens/EncounterScreen";
+import TrainerCardScreen from "@/screens/TrainerCardScreen";
 import PokeCenterScreen from "@/screens/PokeCenterScreen";
 import PokeMartScreen from "@/screens/PokeMartScreen";
 import GymScreen from "@/screens/GymScreen";
@@ -18,7 +20,9 @@ function ScreenRouter() {
     case "menu": return <HomeScreen />;
     case "starter": return <StarterScreen />;
     case "adventure": return <AdventureScreen />;
+    case "encounter": return <EncounterScreen />;
     case "battle": return <BattleScreen />;
+    case "card": return <TrainerCardScreen />;
     case "center": return <PokeCenterScreen />;
     case "mart": return <PokeMartScreen />;
     case "gym": return <GymScreen />;

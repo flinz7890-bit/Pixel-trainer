@@ -155,15 +155,25 @@ body {
 
 .gba-screen {
   background:
-    radial-gradient(120% 80% at 50% 30%, #b6e2c0 0%, #8fcf9f 35%, #3d8b56 70%, #285a3a 100%);
+    radial-gradient(70% 60% at 30% 20%, rgba(255,255,255,0.35), transparent 60%),
+    radial-gradient(120% 80% at 50% 40%, #fde68a 0%, #93c5fd 30%, #38bdf8 60%, #0ea5e9 100%);
   border-radius: 14px;
   border: 4px solid #0b1220;
-  box-shadow: inset 0 0 0 2px #1f3b27, 0 8px 24px rgba(0,0,0,0.5);
+  box-shadow: inset 0 0 0 2px #1e3a8a, 0 8px 24px rgba(0,0,0,0.5);
   padding: 14px;
   position: relative;
   overflow: hidden;
   font-family: 'VT323', 'Press Start 2P', monospace;
   color: #1b1b1b;
+}
+.gba-screen::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 -10% 0;
+  height: 45%;
+  background: radial-gradient(60% 80% at 50% 100%, #84cc16 0%, #65a30d 50%, transparent 80%);
+  pointer-events: none;
+  opacity: 0.85;
 }
 
 .gba-platform {
@@ -238,18 +248,22 @@ body {
 .gba-menu-btn {
   background: linear-gradient(180deg, #fff8ec 0%, #f0e3c1 100%);
   border: 3px solid #1b1b1b;
-  border-radius: 4px;
-  padding: 8px 12px;
+  border-radius: 6px;
+  padding: 14px 14px;
   font-family: 'VT323', monospace;
-  font-size: 18px;
+  font-size: 22px;
   color: #1b1b1b;
   cursor: pointer;
   text-align: left;
   position: relative;
   transition: transform .08s ease, filter .15s ease;
   font-weight: 700;
-  box-shadow: inset 0 0 0 2px #c89c5a, 0 2px 0 #1b1b1b;
+  box-shadow: inset 0 0 0 2px #c89c5a, 0 3px 0 #1b1b1b;
 }
+.gba-menu-btn.color-fight { background: linear-gradient(180deg, #fecaca, #ef4444); color: #3b0210; }
+.gba-menu-btn.color-bag { background: linear-gradient(180deg, #fde68a, #f59e0b); color: #3b1d00; }
+.gba-menu-btn.color-mon { background: linear-gradient(180deg, #bbf7d0, #22c55e); color: #052e16; }
+.gba-menu-btn.color-run { background: linear-gradient(180deg, #bfdbfe, #3b82f6); color: #0c1f4a; }
 .gba-menu-btn:hover:not(:disabled) { filter: brightness(1.04); }
 .gba-menu-btn:active:not(:disabled) { transform: translateY(1px); }
 .gba-menu-btn:disabled { opacity: .55; cursor: not-allowed; }

@@ -38,7 +38,7 @@ export default function AdventureScreen() {
       turn: "player",
     };
     dispatch({ type: "SET_BATTLE", battle });
-    dispatch({ type: "SET_SCREEN", screen: "battle" });
+    dispatch({ type: "SET_SCREEN", screen: "encounter" });
   };
 
   const goLoc = (id: string) => dispatch({ type: "SET_LOCATION", id });
@@ -107,12 +107,15 @@ export default function AdventureScreen() {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 mt-1">
+      <div className="grid grid-cols-3 gap-2 mt-1">
+        <button className="pq-btn pq-btn-ghost" onClick={() => dispatch({ type: "SET_SCREEN", screen: "card" })}>
+          🪪 Card
+        </button>
         <button className="pq-btn pq-btn-ghost" onClick={() => dispatch({ type: "SET_SCREEN", screen: "settings" })}>
           ⚙ Settings
         </button>
         <button className="pq-btn pq-btn-ghost" onClick={() => dispatch({ type: "SET_SCREEN", screen: "welcome" })}>
-          🏠 Title Screen
+          🏠 Title
         </button>
       </div>
 

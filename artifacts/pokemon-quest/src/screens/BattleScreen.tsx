@@ -69,7 +69,7 @@ export default function BattleScreen() {
   const { state, dispatch } = useGame();
   const [enemyShake, setEnemyShake] = useState(false);
   const [playerShake, setPlayerShake] = useState(false);
-  const [menu, setMenu] = useState<"main" | "fight" | "bag">("main");
+  const [menu, setMenu] = useState<"main" | "fight" | "bag" | "mon">("main");
 
   const player = state.team[0];
   const battle = state.battle;
@@ -307,10 +307,20 @@ export default function BattleScreen() {
         <div className="sm:col-span-2">
           {menu === "main" && (
             <div className="gba-menu-grid">
-              <button className="gba-menu-btn has-arrow is-selected" disabled={battle.busy || !!battle.outcome} onClick={() => setMenu("fight")}>FIGHT</button>
-              <button className="gba-menu-btn has-arrow" disabled={battle.busy || !!battle.outcome} onClick={() => setMenu("bag")}>BAG</button>
-              <button className="gba-menu-btn has-arrow" disabled={battle.busy || !!battle.outcome || !!battle.isGym} onClick={onCatch}>POKÉ&shy;BALL</button>
-              <button className="gba-menu-btn has-arrow" disabled={battle.busy || !!battle.outcome || !!battle.isGym} onClick={onRun}>RUN</button>
+              <button className="gba-menu-btn color-fight has-arrow is-selected" disabled={battle.busy || !!battle.outcome} onClick={() => setMenu("fight")}>FIGHT</button>
+              <button className="gba-menu-btn color-bag has-arrow" disabled={battle.busy || !!battle.outcome} onClick={() => setMenu("bag")}>BAG</button>
+              <button className="gba-menu-btn color-mon has-arrow" disabled={battle.busy || !!battle.outcome} onClick={() => setMenu("mon")}>MONSTER</button>
+              <button className="gba-menu-btn color-run has-arrow" disabled={battle.busy || !!battle.outcome || !!battle.isGym} onClick={onRun}>RUN</button>
+            </div>
+          )}
+          {menu === "mon" && (
+            <div className="gba-menu-grid">
+              {state.team.map((p, i) => (
+                <button key={p.uid} className="gba-menu-btn has-arrow" disabled>
+                  {i === 0 ? "▶ " : ""}{speciesOf(p).name.toUpperCase()} L{p.level}
+                </button>
+              ))}
+              <button className="gba-menu-btn has-arrow col-span-2" onClick={() => setMenu("main")}>← BACK</button>
             </div>
           )}
           {menu === "fight" && (

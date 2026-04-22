@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useReducer, ReactNode } from "react";
 import { SPECIES, Species } from "./data";
 
-export type Screen = "welcome" | "menu" | "starter" | "adventure" | "battle" | "center" | "mart" | "gym" | "pokedex" | "settings";
+export type Screen = "welcome" | "menu" | "starter" | "adventure" | "encounter" | "battle" | "center" | "mart" | "gym" | "pokedex" | "card" | "settings";
 
 export interface OwnedPokemon {
   uid: string;
