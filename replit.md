@@ -25,3 +25,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - `pnpm --filter @workspace/api-server run dev` — run API server locally
 
 See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+
+## Artifacts
+
+- **pokemon-quest** — Pokémon-style turn-based browser game (React + Vite). Single-page app, no backend. Save data persists to `localStorage` under key `pokemon-quest-save-v1`. Game systems live in `artifacts/pokemon-quest/src/game/` (`data.ts` species/moves/locations/gyms, `state.tsx` reducer + provider). Screens are in `src/screens/`.

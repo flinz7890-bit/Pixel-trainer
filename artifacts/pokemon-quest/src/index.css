@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+:root {
+  --pq-red: #dc2626;
+  --pq-blue: #2563eb;
+  --pq-yellow: #facc15;
+  --pq-dark: #1f2937;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: linear-gradient(180deg, #1e3a8a 0%, #1e40af 100%);
+  color: #f8fafc;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+@keyframes pq-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+.pq-shake { animation: pq-shake 0.45s ease-in-out; }
+
+@keyframes pq-fade {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.pq-fade { animation: pq-fade 0.3s ease-out; }
+
+@keyframes pq-pop {
+  0% { transform: scale(0.8); opacity: 0; }
+  60% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.pq-pop { animation: pq-pop 0.35s ease-out; }
+
+@keyframes pq-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.pq-float { animation: pq-float 2.5s ease-in-out infinite; }
+
+.pq-pixel {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+.pq-card {
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px;
+}
+
+.pq-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: transform 0.1s ease, filter 0.15s ease, opacity 0.15s ease;
+  user-select: none;
+  font-size: 15px;
+}
+.pq-btn:active:not(:disabled) { transform: translateY(1px) scale(0.98); }
+.pq-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.pq-btn:hover:not(:disabled) { filter: brightness(1.08); }
+
+.pq-btn-red { background: #dc2626; color: white; }
+.pq-btn-blue { background: #2563eb; color: white; }
+.pq-btn-yellow { background: #facc15; color: #1f2937; }
+.pq-btn-green { background: #16a34a; color: white; }
+.pq-btn-gray { background: rgba(255,255,255,0.12); color: white; }
+
+.pq-hp-bar {
+  height: 10px;
+  background: rgba(0,0,0,0.35);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.pq-hp-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.5s ease, background-color 0.3s;
+}
+.pq-xp-bar {
+  height: 6px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.pq-xp-fill {
+  height: 100%;
+  background: #38bdf8;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
