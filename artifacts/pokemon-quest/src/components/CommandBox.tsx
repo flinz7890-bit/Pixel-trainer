@@ -13,12 +13,12 @@ export default function CommandBox() {
   return (
     <div
       className="pq-card mt-3"
-      style={{ borderColor: "rgba(94,234,212,0.30)" }}
+      style={{ borderColor: "rgba(242,98,7,0.30)" }}
     >
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-teal-300/15">
-        <div className="text-[9px] font-pixel text-teal-300/80 tracking-widest">▾ COMMAND LOG</div>
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-orange-400/15">
+        <div className="text-[9px] font-pixel text-orange-400/80 tracking-widest">▾ COMMAND LOG</div>
         <button
-          className="text-[10px] text-slate-400 hover:text-teal-200"
+          className="text-[10px] text-slate-400 hover:text-orange-300"
           onClick={() => dispatch({ type: "CLEAR_LOG" })}
         >
           clear
@@ -30,7 +30,7 @@ export default function CommandBox() {
         )}
         {lines.map((line, i) => (
           <div key={i} className="text-slate-100/90">
-            <span className="text-teal-300/70 mr-1">›</span>{line}
+            <span className="text-orange-400/70 mr-1">›</span>{line}
           </div>
         ))}
       </div>

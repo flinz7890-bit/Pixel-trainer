@@ -32,7 +32,7 @@ export default function StarterScreen() {
     const sp = SPECIES[intro.sp];
     return (
       <div className="pq-fade flex flex-col items-center gap-4 py-10 text-center">
-        <div className="text-[10px] uppercase tracking-[.4em] text-teal-300/80">Welcome, {intro.name}</div>
+        <div className="text-[10px] uppercase tracking-[.4em] text-orange-400/80">Welcome, {intro.name}</div>
         <div
           className="grid place-items-center rounded-2xl pq-pop"
           style={{
@@ -43,10 +43,10 @@ export default function StarterScreen() {
         >
           <span style={{ fontSize: 96 }}>{sp.sprite}</span>
         </div>
-        <div className="font-pixel text-base text-teal-200">{sp.name.toUpperCase()} joined your team!</div>
+        <div className="font-pixel text-base text-orange-300">{sp.name.toUpperCase()} joined your team!</div>
         <div className="pq-card p-4 max-w-sm w-full text-left text-sm text-slate-100/90 font-gba" style={{ fontSize: 17, lineHeight: 1.25 }}>
-          <div>You received the <span className="text-teal-300 font-bold">POKÉDEX</span>!</div>
-          <div>You received <span className="text-teal-300 font-bold">5 POKÉ BALLS</span>!</div>
+          <div>You received the <span className="text-orange-400 font-bold">POKÉDEX</span>!</div>
+          <div>You received <span className="text-orange-400 font-bold">5 POKÉ BALLS</span>!</div>
           <div className="mt-2 text-slate-300/90">Your adventure begins now. Catch them all!</div>
         </div>
         <button className="pq-btn pq-btn-primary w-full max-w-xs pq-glow" onClick={begin}>
@@ -59,14 +59,14 @@ export default function StarterScreen() {
   return (
     <div className="pq-fade flex flex-col gap-6 py-6">
       <div className="text-center">
-        <div className="text-2xl font-extrabold text-teal-200">Welcome, Trainer</div>
+        <div className="text-2xl font-extrabold text-orange-300">Welcome, Trainer</div>
         <div className="text-sm text-slate-300/80 mt-1">First, what's your name?</div>
       </div>
       <input
         value={name}
         onChange={(e) => setName(e.target.value.slice(0, 18))}
         placeholder="Trainer name"
-        className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-teal-300/30 outline-none focus:border-teal-300 text-base text-slate-100 placeholder:text-slate-500"
+        className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-orange-400/30 outline-none focus:border-orange-400 text-base text-slate-100 placeholder:text-slate-500"
       />
       <div className="text-center text-sm text-slate-300/80">Now choose your first partner:</div>
       <div className="grid grid-cols-2 gap-3">

@@ -60,7 +60,7 @@ export default function AdventureScreen() {
       <Toast />
       <div className="pq-card p-3 flex items-center justify-between">
         <div>
-          <div className="text-[10px] uppercase tracking-widest text-teal-300/80">Trainer</div>
+          <div className="text-[10px] uppercase tracking-widest text-orange-400/80">Trainer</div>
           <div className="font-bold text-slate-100">{state.trainerName || "Trainer"}</div>
         </div>
         <div className="flex gap-3 text-sm text-slate-200">
@@ -74,7 +74,7 @@ export default function AdventureScreen() {
       <div className="pq-card p-3">
         <div className="flex items-center justify-between mb-2">
           <div>
-            <div className="text-[10px] uppercase tracking-widest text-teal-300/80">
+            <div className="text-[10px] uppercase tracking-widest text-orange-400/80">
               {inTown ? "Town" : "Route"}
             </div>
             <div className="font-bold text-slate-100">{loc.emoji} {loc.name}</div>
@@ -82,7 +82,7 @@ export default function AdventureScreen() {
           <select
             value={state.locationId}
             onChange={(e) => goLoc(e.target.value)}
-            className="bg-slate-900/60 border border-teal-300/30 text-slate-100 rounded-lg px-2 py-1 text-sm"
+            className="bg-slate-900/60 border border-orange-400/30 text-slate-100 rounded-lg px-2 py-1 text-sm"
           >
             {LOCATIONS.map((l) => (
               <option key={l.id} value={l.id} className="text-slate-900">
@@ -114,7 +114,7 @@ export default function AdventureScreen() {
       </div>
 
       <div>
-        <div className="text-[10px] uppercase tracking-widest text-teal-300/80 mb-1 px-1">Your Team ({state.team.length}/6)</div>
+        <div className="text-[10px] uppercase tracking-widest text-orange-400/80 mb-1 px-1">Your Team ({state.team.length}/6)</div>
         <div className="flex flex-col gap-2">
           {state.team.length === 0 && (
             <div className="pq-card p-4 text-sm text-center text-slate-300/80">No Pokémon in your team.</div>
@@ -128,7 +128,7 @@ export default function AdventureScreen() {
           📖 Pokédex
         </button>
         <button className="pq-btn pq-btn-ghost" onClick={() => dispatch({ type: "SET_SCREEN", screen: "card" })}>
-          🪪 Card
+          🚶 Follow
         </button>
         <button className="pq-btn pq-btn-ghost" onClick={() => dispatch({ type: "SET_SCREEN", screen: "settings" })}>
           ⚙ Settings

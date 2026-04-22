@@ -84,7 +84,7 @@ export default function EncounterScreen() {
       {/* Compact dark themed encounter card */}
       <div className="pq-card p-3">
         <div className="flex items-center justify-between mb-2">
-          <div className="text-[10px] uppercase tracking-[.3em] text-teal-300/80">Wild Encounter</div>
+          <div className="text-[10px] uppercase tracking-[.3em] text-orange-400/80">Wild Encounter</div>
           <div className="text-[11px] text-slate-300/80">{loc.emoji} {loc.name}</div>
         </div>
 
@@ -115,7 +115,7 @@ export default function EncounterScreen() {
           {/* Info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-baseline gap-2">
-              <span className="font-pixel text-[12px] text-teal-200 truncate">{sp.name.toUpperCase()}</span>
+              <span className="font-pixel text-[12px] text-orange-300 truncate">{sp.name.toUpperCase()}</span>
               <span style={{ color: enemy.gender === "M" ? "#60a5fa" : "#f472b6", fontWeight: 800 }}>
                 {enemy.gender === "M" ? "♂" : "♀"}
               </span>
@@ -123,17 +123,17 @@ export default function EncounterScreen() {
             </div>
             <div className="text-[11px] text-slate-300/80 mt-0.5">{sp.type.join(" / ")}</div>
             <div className="grid grid-cols-3 gap-1 mt-2 text-[10px]">
-              <div className="rounded-md px-2 py-1 bg-white/5 border border-teal-300/15 text-center">
+              <div className="rounded-md px-2 py-1 bg-white/5 border border-orange-400/15 text-center">
                 <div className="text-slate-400">Catch</div>
-                <div className="text-teal-200 font-bold">{Math.round(sp.catchRate * 100)}%</div>
+                <div className="text-orange-300 font-bold">{Math.round(sp.catchRate * 100)}%</div>
               </div>
-              <div className="rounded-md px-2 py-1 bg-white/5 border border-teal-300/15 text-center">
+              <div className="rounded-md px-2 py-1 bg-white/5 border border-orange-400/15 text-center">
                 <div className="text-slate-400">Balls</div>
-                <div className="text-teal-200 font-bold">{state.pokeballs}</div>
+                <div className="text-orange-300 font-bold">{state.pokeballs}</div>
               </div>
-              <div className="rounded-md px-2 py-1 bg-white/5 border border-teal-300/15 text-center">
+              <div className="rounded-md px-2 py-1 bg-white/5 border border-orange-400/15 text-center">
                 <div className="text-slate-400">Rarity</div>
-                <div className="text-teal-200 font-bold capitalize">{sp.rarity}</div>
+                <div className="text-orange-300 font-bold capitalize">{sp.rarity}</div>
               </div>
             </div>
           </div>

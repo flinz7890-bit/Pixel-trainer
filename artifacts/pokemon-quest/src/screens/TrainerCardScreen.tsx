@@ -1,153 +1,113 @@
 import { useGame, speciesOf } from "@/game/state";
-import { GYMS } from "@/game/data";
 import Toast from "@/components/Toast";
-
-const BADGE_COLORS = [
-  "#a16207", "#06b6d4", "#facc15", "#fb7185",
-  "#22c55e", "#fb923c", "#a78bfa", "#e11d48",
-];
+import trainerGif from "@assets/dai420w-1ec74242-2aad-47a3-8cf3-6c6f0f7c297b_1776838730939.gif";
 
 export default function TrainerCardScreen() {
   const { state, dispatch } = useGame();
   const team = state.team.slice(0, 6);
-  const slots = [...team, ...Array(6 - team.length).fill(null)];
-  const totalCaught = Object.values(state.pokedex).filter((e) => e.caught).length;
 
   return (
     <div className="pq-fade flex flex-col gap-3 py-3 select-none">
       <Toast />
 
+      <div className="pq-card p-3 text-center">
+        <div className="text-[10px] uppercase tracking-[.4em] text-orange-400/80">
+          Following You
+        </div>
+        <div className="font-pixel text-base text-orange-300 mt-1">
+          {(state.trainerName || "TRAINER").toUpperCase()}
+        </div>
+        <div className="text-[11px] text-slate-400 font-gba mt-0.5">
+          A wild walk through the tall grass...
+        </div>
+      </div>
+
       <div
-        className="rounded-2xl border-4 p-3"
+        className="pq-card relative overflow-hidden"
         style={{
-          borderColor: "#0b1220",
+          height: 280,
           background:
-            "linear-gradient(180deg, #d7f0c5 0%, #a4d870 40%, #5fa844 100%)",
-          boxShadow: "inset 0 0 0 3px #2d5a1f, 0 10px 30px rgba(0,0,0,0.45)",
+            "linear-gradient(180deg, #5fa844 0%, #8fd66a 55%, #c8f0a3 100%)",
         }}
       >
-        {/* Title bar */}
+        {/* ground stripes */}
         <div
-          className="font-pixel text-center py-2 mb-3 rounded"
+          aria-hidden
+          className="absolute inset-x-0 bottom-0"
           style={{
-            background: "linear-gradient(180deg, #fff8ec, #f0e3c1)",
-            border: "3px solid #1b1b1b",
-            boxShadow: "inset 0 0 0 2px #c89c5a",
-            color: "#1b1b1b",
-            fontSize: 12,
-            letterSpacing: 1,
+            height: "55%",
+            background:
+              "repeating-linear-gradient(90deg, rgba(34,80,30,0.18) 0 6px, transparent 6px 14px)",
           }}
-        >
-          ★ TRAINER CARD ★
-        </div>
+        />
+        {/* horizon highlight */}
+        <div
+          aria-hidden
+          className="absolute inset-x-0"
+          style={{
+            top: "40%",
+            height: 2,
+            background: "rgba(255,255,255,0.35)",
+            filter: "blur(1px)",
+          }}
+        />
 
-        <div className="flex gap-3 items-stretch">
-          {/* Trainer sprite panel */}
-          <div
-            className="flex flex-col items-center justify-between p-2 rounded"
+        {/* trainer + party trail */}
+        <div className="absolute inset-x-0 bottom-6 flex items-end justify-center gap-3 pointer-events-none">
+          <img
+            src={trainerGif}
+            alt="trainer"
+            className="pq-trail"
             style={{
-              background: "linear-gradient(180deg, #fff8ec, #f0e3c1)",
-              border: "3px solid #1b1b1b",
-              boxShadow: "inset 0 0 0 2px #c89c5a",
-              minWidth: 110,
+              height: 140,
+              imageRendering: "pixelated",
+              filter: "drop-shadow(0 6px 0 rgba(0,0,0,0.30))",
             }}
-          >
-            <div style={{ fontSize: 64, lineHeight: 1 }} className="pq-float">🧑‍🎤</div>
-            <div className="font-pixel text-[9px] text-center text-slate-800 mt-1 break-words">
-              {(state.trainerName || "TRAINER").toUpperCase()}
-            </div>
-            <div className="text-[11px] text-slate-700 mt-1 font-gba">
-              ID 0{Math.abs(hashCode(state.trainerName || "T")) % 9999}
-            </div>
-          </div>
-
-          {/* Stats + Pokemon grid */}
-          <div className="flex-1 flex flex-col gap-2">
-            <div
-              className="rounded p-2 text-[12px] text-slate-800 font-gba"
-              style={{
-                background: "linear-gradient(180deg, #fff8ec, #f0e3c1)",
-                border: "3px solid #1b1b1b",
-                boxShadow: "inset 0 0 0 2px #c89c5a",
-                lineHeight: 1.2,
-              }}
-            >
-              <div className="flex justify-between"><span>MONEY</span><span>₽{state.money}</span></div>
-              <div className="flex justify-between"><span>POKÉDEX</span><span>{totalCaught} caught</span></div>
-              <div className="flex justify-between"><span>BADGES</span><span>{state.badges.length}/8</span></div>
-            </div>
-
-            <div
-              className="rounded p-2"
-              style={{
-                background: "linear-gradient(180deg, #fff8ec, #f0e3c1)",
-                border: "3px solid #1b1b1b",
-                boxShadow: "inset 0 0 0 2px #c89c5a",
-              }}
-            >
-              <div className="font-pixel text-[8px] text-slate-700 mb-1 text-center">PARTY</div>
-              <div className="grid grid-cols-3 gap-1.5">
-                {slots.map((p, i) => (
-                  <div
-                    key={i}
-                    className="grid place-items-center rounded"
-                    style={{
-                      aspectRatio: "1",
-                      background: p ? speciesOf(p).color + "44" : "#e7e0c2",
-                      border: "2px solid #1b1b1b",
-                      boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.6)",
-                      position: "relative",
-                    }}
-                  >
-                    {p ? (
-                      <>
-                        <span style={{ fontSize: 28, lineHeight: 1 }}>{speciesOf(p).sprite}</span>
-                        <span className="absolute bottom-0 right-0.5 font-gba text-[10px] text-slate-900 leading-none">L{p.level}</span>
-                      </>
-                    ) : (
-                      <span className="text-slate-500 text-xl">?</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Badges row */}
-        <div
-          className="rounded p-2 mt-3"
-          style={{
-            background: "linear-gradient(180deg, #fff8ec, #f0e3c1)",
-            border: "3px solid #1b1b1b",
-            boxShadow: "inset 0 0 0 2px #c89c5a",
-          }}
-        >
-          <div className="font-pixel text-[8px] text-slate-700 mb-1 text-center">GYM BADGES</div>
-          <div className="grid grid-cols-8 gap-1">
-            {Array.from({ length: 8 }).map((_, i) => {
-              const earned = i < state.badges.length;
-              const gym = GYMS[i];
-              const color = BADGE_COLORS[i];
-              return (
-                <div
-                  key={i}
-                  title={gym?.badge || "—"}
-                  className="grid place-items-center rounded-full aspect-square"
+          />
+          {team.map((p, i) => {
+            const sp = speciesOf(p);
+            return (
+              <div
+                key={p.uid}
+                className="pq-trail flex flex-col items-center"
+                style={{ animationDelay: `${(i + 1) * 0.18}s` }}
+              >
+                <span
                   style={{
-                    background: earned ? color : "#cbc69e",
-                    border: "2px solid #1b1b1b",
-                    boxShadow: earned
-                      ? `inset 0 0 0 2px rgba(255,255,255,0.55), 0 0 8px ${color}88`
-                      : "inset 0 0 0 2px rgba(0,0,0,0.15)",
-                    opacity: earned ? 1 : 0.55,
+                    fontSize: 44,
+                    lineHeight: 1,
+                    filter: "drop-shadow(0 4px 0 rgba(0,0,0,0.30))",
                   }}
                 >
-                  <span style={{ fontSize: 14 }}>{earned ? "★" : "·"}</span>
+                  {sp.sprite}
+                </span>
+                <div
+                  className="font-pixel text-[8px] mt-0.5 px-1 rounded"
+                  style={{
+                    background: "rgba(0,0,0,0.45)",
+                    color: "#fff",
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  L{p.level}
                 </div>
-              );
-            })}
+              </div>
+            );
+          })}
+        </div>
+
+        {team.length === 0 && (
+          <div className="absolute inset-x-0 bottom-2 text-center font-gba text-[14px] text-slate-900/80">
+            No Pokémon following you yet.
           </div>
+        )}
+      </div>
+
+      <div className="pq-card p-3 text-center">
+        <div className="font-gba text-[15px] text-slate-200 leading-snug">
+          {team.length > 0
+            ? `${(state.trainerName || "Trainer")} and ${team.length} Pokémon are out for a stroll!`
+            : `${(state.trainerName || "Trainer")} walks alone... catch a Pokémon!`}
         </div>
       </div>
 
@@ -159,10 +119,4 @@ export default function TrainerCardScreen() {
       </button>
     </div>
   );
-}
-
-function hashCode(s: string) {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h << 5) - h + s.charCodeAt(i);
-  return h | 0;
 }

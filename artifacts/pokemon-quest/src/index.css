@@ -1,20 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --pq-bg-0: #07101c;
-  --pq-bg-1: #0b1726;
-  --pq-bg-2: #11243a;
-  --pq-card: rgba(15, 30, 48, 0.78);
-  --pq-card-border: rgba(94, 234, 212, 0.18);
-  --pq-teal: #2dd4bf;
-  --pq-teal-2: #5eead4;
-  --pq-mint: #99f6e4;
-  --pq-amber: #f59e0b;
-  --pq-orange: #fb923c;
+  --pq-bg-0: #0E1525;
+  --pq-bg-1: #131C2E;
+  --pq-bg-2: #1C2333;
+  --pq-card: rgba(28, 35, 51, 0.82);
+  --pq-card-border: rgba(242, 98, 7, 0.22);
+  --pq-orange: #F26207;
+  --pq-orange-2: #FF7A45;
+  --pq-orange-soft: #FFB07A;
+  --pq-amber: #F5A524;
   --pq-violet: #a78bfa;
   --pq-rose: #fb7185;
-  --pq-text: #e6f1ff;
-  --pq-muted: #93a4bd;
+  --pq-text: #F5F9FC;
+  --pq-muted: #94A3B8;
 }
 
 html, body, #root { height: 100%; }
@@ -22,8 +21,8 @@ html, body, #root { height: 100%; }
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background:
-    radial-gradient(1200px 600px at 10% -10%, rgba(94,234,212,0.12), transparent 60%),
-    radial-gradient(900px 500px at 110% 10%, rgba(167,139,250,0.10), transparent 60%),
+    radial-gradient(1200px 600px at 10% -10%, rgba(242,98,7,0.10), transparent 60%),
+    radial-gradient(900px 500px at 110% 10%, rgba(255,122,69,0.08), transparent 60%),
     linear-gradient(180deg, var(--pq-bg-0) 0%, var(--pq-bg-1) 60%, var(--pq-bg-2) 100%);
   color: var(--pq-text);
   margin: 0;
@@ -64,9 +63,15 @@ body {
 }
 .pq-float { animation: pq-float 2.5s ease-in-out infinite; }
 
+@keyframes pq-trail {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.pq-trail { animation: pq-trail 0.7s ease-in-out infinite; }
+
 @keyframes pq-glow {
-  0%, 100% { box-shadow: 0 0 0 rgba(45,212,191,0.0); }
-  50% { box-shadow: 0 0 24px rgba(45,212,191,0.45); }
+  0%, 100% { box-shadow: 0 0 0 rgba(242,98,7,0.0); }
+  50% { box-shadow: 0 0 24px rgba(242,98,7,0.55); }
 }
 .pq-glow { animation: pq-glow 2.4s ease-in-out infinite; }
 
@@ -98,15 +103,15 @@ body {
 .pq-btn:hover:not(:disabled) { filter: brightness(1.1); }
 
 .pq-btn-primary {
-  background: linear-gradient(180deg, #2dd4bf, #14b8a6);
-  color: #042f2e;
+  background: linear-gradient(180deg, #FF7A45, #F26207);
+  color: #1a0a00;
   border-color: rgba(255,255,255,0.18);
-  box-shadow: 0 6px 18px rgba(20,184,166,0.35);
+  box-shadow: 0 6px 18px rgba(242,98,7,0.40);
 }
 .pq-btn-secondary {
-  background: rgba(94,234,212,0.08);
-  border-color: rgba(94,234,212,0.30);
-  color: var(--pq-mint);
+  background: rgba(242,98,7,0.10);
+  border-color: rgba(242,98,7,0.35);
+  color: var(--pq-orange-soft);
 }
 .pq-btn-amber {
   background: linear-gradient(180deg, #fbbf24, #f59e0b);
@@ -146,7 +151,7 @@ body {
 }
 .pq-xp-fill {
   height: 100%;
-  background: linear-gradient(90deg, #38bdf8, #2dd4bf);
+  background: linear-gradient(90deg, #F5A524, #F26207);
   border-radius: 999px;
   transition: width 0.4s ease;
 }
