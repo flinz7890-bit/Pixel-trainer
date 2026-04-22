@@ -1,14 +1,27 @@
 import { useState } from "react";
-import { useGame, speciesOf, makePokemon, OwnedPokemon } from "@/game/state";
-import { SPECIES } from "@/game/data";
+import { useGame, speciesOf, makePokemon, BattleState, OwnedPokemon } from "@/game/state";
+import { LOCATIONS, SPECIES } from "@/game/data";
 import Toast from "@/components/Toast";
+
+function pickEncounter(locId: string) {
+  const loc = LOCATIONS.find((l) => l.id === locId)!;
+  const total = loc.encounters.reduce((s, e) => s + e.weight, 0);
+  let r = Math.random() * total;
+  for (const enc of loc.encounters) {
+    r -= enc.weight;
+    if (r <= 0) {
+      const lvl = Math.floor(enc.minLevel + Math.random() * (enc.maxLevel - enc.minLevel + 1));
+      return { speciesId: enc.speciesId, level: lvl };
+    }
+  }
+  const last = loc.encounters[loc.encounters.length - 1];
+  return { speciesId: last.speciesId, level: last.minLevel };
+}
 
 export default function EncounterScreen() {
   const { state, dispatch } = useGame();
   const enemy = state.battle?.enemy as OwnedPokemon | undefined;
-  const [busy, setBusy] = useState(false);
   const [shake, setShake] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
 
   if (!enemy) {
     return (
@@ -27,35 +40,35 @@ export default function EncounterScreen() {
     dispatch({ type: "SET_SCREEN", screen: "adventure" });
   };
 
-  const tryCatch = async () => {
-    if (busy) return;
-    if (state.pokeballs <= 0) {
-      setMsg("No Pokéballs left! Visit the Mart.");
+  const exploreAgain = () => {
+    const active = state.team[0];
+    if (!active || active.hp <= 0) {
+      dispatch({ type: "TOAST", text: "Your Pokémon needs healing first!" });
+      goBack();
       return;
     }
-    setBusy(true);
-    setMsg(`You threw a Pokéball at ${sp.name}!`);
-    dispatch({ type: "SPEND_BALL" });
     setShake(true);
-    await new Promise((r) => setTimeout(r, 900));
-    setShake(false);
-    const chance = Math.min(0.85, sp.catchRate + 0.15);
-    const success = Math.random() < chance;
-    if (success) {
-      const captured = makePokemon(enemy.speciesId, enemy.level);
-      captured.gender = enemy.gender;
-      dispatch({ type: "CATCH_POKEMON", speciesId: enemy.speciesId });
-      dispatch({ type: "ADD_TO_TEAM", pokemon: captured });
-      const xp = sp.xpYield + enemy.level;
-      dispatch({ type: "GIVE_XP", xp });
-      dispatch({ type: "TOAST", text: `Gotcha! ${sp.name} was caught! +${xp} XP` });
-      setMsg(`Gotcha! ${sp.name} was caught!`);
-      await new Promise((r) => setTimeout(r, 900));
-      goBack();
-    } else {
-      setMsg(`Oh no! The ${sp.name} broke free!`);
-      setBusy(false);
+    setTimeout(() => setShake(false), 350);
+    const { speciesId, level } = pickEncounter(state.locationId);
+    const next = makePokemon(speciesId, level);
+    dispatch({ type: "SEE_POKEMON", speciesId });
+    const battle: BattleState = {
+      enemy: next,
+      log: [`A wild ${SPECIES[speciesId].name} appeared!`],
+      busy: false,
+      turn: "player",
+    };
+    dispatch({ type: "SET_BATTLE", battle });
+    dispatch({ type: "TOAST", text: `A wild ${SPECIES[speciesId].name} appeared!` });
+  };
+
+  const startBattle = () => {
+    const active = state.team[0];
+    if (!active || active.hp <= 0) {
+      dispatch({ type: "TOAST", text: "Your Pokémon needs healing first!" });
+      return;
     }
+    dispatch({ type: "SET_SCREEN", screen: "battle" });
   };
 
   return (
@@ -117,21 +130,23 @@ export default function EncounterScreen() {
         </div>
       </div>
 
-      {msg && (
-        <div className="gba-dialog">{msg}</div>
-      )}
+      <div className="gba-dialog">A wild {sp.name.toUpperCase()} appeared! What will you do?</div>
 
       <div className="flex flex-col gap-3">
         <button
           className="pq-btn pq-btn-primary text-lg py-4"
-          disabled={busy}
-          onClick={tryCatch}
+          onClick={startBattle}
         >
           🎯 CAPTURE
         </button>
         <button
+          className="pq-btn pq-btn-amber text-lg py-4"
+          onClick={exploreAgain}
+        >
+          🔄 EXPLORE AGAIN
+        </button>
+        <button
           className="pq-btn pq-btn-rose text-lg py-4"
-          disabled={busy}
           onClick={goBack}
         >
           🏃 RUN
