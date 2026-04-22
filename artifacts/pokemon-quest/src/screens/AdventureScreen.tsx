@@ -1,5 +1,5 @@
 import { useGame, makePokemon, BattleState } from "@/game/state";
-import { LOCATIONS, GYMS, SPECIES } from "@/game/data";
+import { LOCATIONS, SPECIES } from "@/game/data";
 import PokemonCard from "@/components/PokemonCard";
 import Toast from "@/components/Toast";
 
@@ -48,10 +48,10 @@ export default function AdventureScreen() {
       <Toast />
       <div className="pq-card p-3 flex items-center justify-between">
         <div>
-          <div className="text-xs opacity-70">Trainer</div>
-          <div className="font-bold">{state.trainerName || "Trainer"}</div>
+          <div className="text-[10px] uppercase tracking-widest text-teal-300/80">Trainer</div>
+          <div className="font-bold text-slate-100">{state.trainerName || "Trainer"}</div>
         </div>
-        <div className="flex gap-3 text-sm">
+        <div className="flex gap-3 text-sm text-slate-200">
           <span title="Money">💰 {state.money}</span>
           <span title="Pokéballs">⚪ {state.pokeballs}</span>
           <span title="Potions">🧪 {state.potions}</span>
@@ -62,61 +62,61 @@ export default function AdventureScreen() {
       <div className="pq-card p-3">
         <div className="flex items-center justify-between mb-2">
           <div>
-            <div className="text-xs opacity-70">Current Location</div>
-            <div className="font-bold">{loc.emoji} {loc.name}</div>
+            <div className="text-[10px] uppercase tracking-widest text-teal-300/80">Current Location</div>
+            <div className="font-bold text-slate-100">{loc.emoji} {loc.name}</div>
           </div>
           <select
             value={state.locationId}
             onChange={(e) => goLoc(e.target.value)}
-            className="bg-white/10 border border-white/20 rounded-lg px-2 py-1 text-sm"
+            className="bg-slate-900/60 border border-teal-300/30 text-slate-100 rounded-lg px-2 py-1 text-sm"
           >
             {LOCATIONS.map((l) => (
-              <option key={l.id} value={l.id} className="text-gray-900">
+              <option key={l.id} value={l.id} className="text-slate-900">
                 {l.emoji} {l.name}
               </option>
             ))}
           </select>
         </div>
-        <button className="pq-btn pq-btn-red w-full" onClick={explore}>
+        <button className="pq-btn pq-btn-primary w-full" onClick={explore}>
           🌿 Explore — Find Wild Pokémon
         </button>
       </div>
 
       <div>
-        <div className="text-xs opacity-70 mb-1 px-1">Your Team ({state.team.length}/6)</div>
+        <div className="text-[10px] uppercase tracking-widest text-teal-300/80 mb-1 px-1">Your Team ({state.team.length}/6)</div>
         <div className="flex flex-col gap-2">
           {state.team.length === 0 && (
-            <div className="pq-card p-4 text-sm text-center opacity-80">No Pokémon in your team.</div>
+            <div className="pq-card p-4 text-sm text-center text-slate-300/80">No Pokémon in your team.</div>
           )}
           {state.team.map((p) => <PokemonCard key={p.uid} p={p} />)}
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <button className="pq-btn pq-btn-green" onClick={() => dispatch({ type: "SET_SCREEN", screen: "center" })}>
+        <button className="pq-btn pq-btn-secondary" onClick={() => dispatch({ type: "SET_SCREEN", screen: "center" })}>
           🏥 PokéCenter
         </button>
-        <button className="pq-btn pq-btn-blue" onClick={() => dispatch({ type: "SET_SCREEN", screen: "mart" })}>
+        <button className="pq-btn pq-btn-secondary" onClick={() => dispatch({ type: "SET_SCREEN", screen: "mart" })}>
           🛒 PokéMart
         </button>
-        <button className="pq-btn pq-btn-yellow" onClick={() => dispatch({ type: "SET_SCREEN", screen: "gym" })}>
+        <button className="pq-btn pq-btn-amber" onClick={() => dispatch({ type: "SET_SCREEN", screen: "gym" })}>
           🏟 Gym
         </button>
-        <button className="pq-btn pq-btn-gray" onClick={() => dispatch({ type: "SET_SCREEN", screen: "pokedex" })}>
+        <button className="pq-btn pq-btn-violet" onClick={() => dispatch({ type: "SET_SCREEN", screen: "pokedex" })}>
           📖 Pokédex
         </button>
       </div>
 
       <div className="grid grid-cols-2 gap-2 mt-1">
-        <button className="pq-btn pq-btn-gray" onClick={() => dispatch({ type: "SET_SCREEN", screen: "settings" })}>
+        <button className="pq-btn pq-btn-ghost" onClick={() => dispatch({ type: "SET_SCREEN", screen: "settings" })}>
           ⚙ Settings
         </button>
-        <button className="pq-btn pq-btn-gray" onClick={() => dispatch({ type: "SET_SCREEN", screen: "home" })}>
-          🏠 Home
+        <button className="pq-btn pq-btn-ghost" onClick={() => dispatch({ type: "SET_SCREEN", screen: "welcome" })}>
+          🏠 Title Screen
         </button>
       </div>
 
-      <div className="text-[11px] opacity-60 text-center px-2">
+      <div className="text-[11px] text-slate-400 text-center px-2">
         Badges: {state.badges.length === 0 ? "none yet" : state.badges.join(" • ")}
       </div>
     </div>

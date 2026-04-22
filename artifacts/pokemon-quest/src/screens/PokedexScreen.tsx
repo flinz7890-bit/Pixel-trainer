@@ -45,7 +45,7 @@ export default function PokedexScreen() {
       <button
         className="pq-btn pq-btn-gray"
         onClick={() =>
-          dispatch({ type: "SET_SCREEN", screen: state.team.length ? "adventure" : "home" })
+          dispatch({ type: "SET_SCREEN", screen: state.team.length ? "adventure" : "menu" })
         }
       >
         ← Back

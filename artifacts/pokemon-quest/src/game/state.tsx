@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useReducer, ReactNode } from "react";
-import { SPECIES, LOCATIONS, GYMS, Species } from "./data";
+import { SPECIES, Species } from "./data";
 
-export type Screen = "home" | "starter" | "adventure" | "battle" | "center" | "mart" | "gym" | "pokedex" | "settings";
+export type Screen = "welcome" | "menu" | "starter" | "adventure" | "battle" | "center" | "mart" | "gym" | "pokedex" | "settings";
 
 export interface OwnedPokemon {
   uid: string;
@@ -12,6 +12,7 @@ export interface OwnedPokemon {
   hp: number;
   maxHp: number;
   atk: number;
+  gender: "M" | "F";
 }
 
 export interface BattleState {
@@ -52,6 +53,10 @@ function newUid() {
   return Math.random().toString(36).slice(2, 10);
 }
 
+function randGender(): "M" | "F" {
+  return Math.random() < 0.5 ? "M" : "F";
+}
+
 export function xpToNext(level: number) {
   return 20 + level * 15;
 }
@@ -60,7 +65,7 @@ export function makePokemon(speciesId: number, level: number): OwnedPokemon {
   const sp = SPECIES[speciesId];
   const maxHp = Math.floor(sp.baseHp + level * 3);
   const atk = Math.floor(sp.baseAtk + level * 1.5);
-  return { uid: newUid(), speciesId, level, xp: 0, hp: maxHp, maxHp, atk };
+  return { uid: newUid(), speciesId, level, xp: 0, hp: maxHp, maxHp, atk, gender: randGender() };
 }
 
 export function speciesOf(p: OwnedPokemon): Species {
@@ -68,7 +73,7 @@ export function speciesOf(p: OwnedPokemon): Species {
 }
 
 const initialState: GameState = {
-  screen: "home",
+  screen: "welcome",
   trainerName: "",
   money: 500,
   pokeballs: 5,
@@ -143,7 +148,7 @@ function reducer(state: GameState, action: Action): GameState {
     case "GIVE_XP": {
       if (state.team.length === 0) return state;
       const team = [...state.team];
-      let p = { ...team[0] };
+      const p = { ...team[0] };
       p.xp += action.xp;
       while (p.xp >= xpToNext(p.level)) {
         p.xp -= xpToNext(p.level);
@@ -199,7 +204,6 @@ function reducer(state: GameState, action: Action): GameState {
       return { ...state, pokedex: { ...state.pokedex, [action.speciesId]: { ...cur, seen: true } } };
     }
     case "CATCH_POKEMON": {
-      const cur = state.pokedex[action.speciesId] || { seen: false, caught: false };
       return { ...state, pokedex: { ...state.pokedex, [action.speciesId]: { seen: true, caught: true } } };
     }
     case "TOAST":
@@ -237,7 +241,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const raw = localStorage.getItem(SAVE_KEY);
       if (!raw) return false;
       const parsed = JSON.parse(raw) as GameState;
-      dispatch({ type: "LOAD", payload: parsed });
+      // back-compat: ensure gender exists
+      const team = (parsed.team || []).map((p) => ({ ...p, gender: p.gender || randGender() }));
+      const storage = (parsed.storage || []).map((p) => ({ ...p, gender: p.gender || randGender() }));
+      dispatch({ type: "LOAD", payload: { ...parsed, team, storage } });
       return true;
     } catch { return false; }
   };
@@ -251,9 +258,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "RESET" });
   };
 
-  // Auto-save when key state changes (not during battle to avoid spam)
+  // Auto-save when key state changes (skip welcome/menu/starter/active battle)
   useEffect(() => {
-    if (state.screen === "home" || state.screen === "starter") return;
+    if (["welcome","menu","starter"].includes(state.screen)) return;
     if (state.battle) return;
     try {
       const toSave = { ...state, battle: null, toast: null };
@@ -280,5 +287,3 @@ export function useGame() {
   if (!ctx) throw new Error("useGame must be used within GameProvider");
   return ctx;
 }
-
-export { LOCATIONS, GYMS };

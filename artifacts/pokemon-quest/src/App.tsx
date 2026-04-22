@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import WelcomeScreen from "@/screens/WelcomeScreen";
 import HomeScreen from "@/screens/HomeScreen";
 import StarterScreen from "@/screens/StarterScreen";
 import AdventureScreen from "@/screens/AdventureScreen";
@@ -13,7 +14,8 @@ import { GameProvider, useGame } from "@/game/state";
 function ScreenRouter() {
   const { state } = useGame();
   switch (state.screen) {
-    case "home": return <HomeScreen />;
+    case "welcome": return <WelcomeScreen />;
+    case "menu": return <HomeScreen />;
     case "starter": return <StarterScreen />;
     case "adventure": return <AdventureScreen />;
     case "battle": return <BattleScreen />;
@@ -22,7 +24,7 @@ function ScreenRouter() {
     case "gym": return <GymScreen />;
     case "pokedex": return <PokedexScreen />;
     case "settings": return <SettingsScreen />;
-    default: return <HomeScreen />;
+    default: return <WelcomeScreen />;
   }
 }
 
