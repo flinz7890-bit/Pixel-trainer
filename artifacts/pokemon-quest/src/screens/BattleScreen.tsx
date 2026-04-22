@@ -29,37 +29,30 @@ function GenderIcon({ g }: { g: "M" | "F" }) {
   );
 }
 
-function StatusBox({
-  p, showHpNumbers, showXp,
+function Banner({
+  p, side, showHpNumbers, showXp,
 }: {
-  p: OwnedPokemon; showHpNumbers?: boolean; showXp?: boolean;
+  p: OwnedPokemon; side: "left" | "right"; showHpNumbers?: boolean; showXp?: boolean;
 }) {
   const sp = speciesOf(p);
+  const pct = Math.max(0, (p.hp / p.maxHp) * 100);
+  const cls = pct > 50 ? "" : pct > 20 ? "mid" : "low";
   return (
-    <div className="gba-status">
-      <div className="flex items-center justify-between gap-2">
+    <div className={`gba-banner ${side}`}>
+      <div className="row">
         <div className="flex items-center gap-1">
-          <span className="gba-name uppercase">{sp.name}</span>
+          <span className="name uppercase">{sp.name}</span>
           <GenderIcon g={p.gender} />
         </div>
-        <div className="gba-lvl">:L{p.level}</div>
+        <div className="lvl">:L{p.level}</div>
       </div>
-      <div className="flex items-center gap-2 mt-1">
-        <span className="text-[12px] font-bold text-yellow-700">HP</span>
-        <HpDisplay hp={p.hp} max={p.maxHp} />
+      <div className="hp-row">
+        <span className="hp-label">HP</span>
+        <div className="hp-track-thin"><div className={`hp-fill ${cls}`} style={{ width: `${pct}%` }} /></div>
       </div>
-      {showHpNumbers && (
-        <div className="text-right text-[14px] mt-0.5 leading-none">{p.hp}/{p.maxHp}</div>
-      )}
+      {showHpNumbers && <div className="hp-num">{p.hp}/{p.maxHp}</div>}
       {showXp && (
-        <div className="mt-1">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-cyan-800">EXP</span>
-            <div className="gba-xp-track flex-1">
-              <div className="gba-xp-fill" style={{ width: `${(p.xp / xpToNext(p.level)) * 100}%` }} />
-            </div>
-          </div>
-        </div>
+        <div className="xp-track"><div className="xp-fill" style={{ width: `${(p.xp / xpToNext(p.level)) * 100}%` }} /></div>
       )}
     </div>
   );
@@ -250,52 +243,24 @@ export default function BattleScreen() {
     <div className="pq-fade flex flex-col gap-3 py-2 select-none">
       <Toast />
 
-      <div className="gba-screen" style={{ aspectRatio: "3 / 2", minHeight: 320 }}>
-        {/* Background platforms */}
-        <div className="gba-platform" style={{ width: 130, height: 28, top: "26%", right: "8%" }} />
-        <div className="gba-platform" style={{ width: 160, height: 32, bottom: "18%", left: "6%" }} />
-
-        {/* Top: enemy status (left) + sprite (right) */}
-        <div className="absolute left-3 top-3 right-3 flex items-start justify-between">
-          <StatusBox p={enemy} />
-          <div
-            className={`gba-pixel-shadow ${enemyShake ? "pq-shake" : ""}`}
-            style={{ marginRight: 6, marginTop: 2 }}
-          >
-            <div
-              className="grid place-items-center rounded-full"
-              style={{
-                width: 92, height: 92,
-                background: enemySp.color + "33",
-                border: `3px solid ${enemySp.color}`,
-                boxShadow: `inset 0 0 0 3px rgba(255,255,255,0.5)`,
-              }}
-            >
-              <span className="gba-sprite-emoji">{enemySp.sprite}</span>
-            </div>
+      <div className="gba-screen" style={{ aspectRatio: "3 / 2", minHeight: 300 }}>
+        {/* Enemy: banner top-left, sprite top-right with platform */}
+        <div className="absolute left-2 top-2 z-20"><Banner p={enemy} side="left" /></div>
+        <div className="absolute right-3 top-[28%] z-10" style={{ width: 110 }}>
+          <div className="gba-platform-disc" style={{ width: 130, height: 26, left: -10, bottom: -14, position: "absolute" }} />
+          <div className={`relative ${enemyShake ? "pq-shake" : ""}`}>
+            <span className="gba-sprite-emoji" style={{ fontSize: 72, display: "block", textAlign: "center" }}>{enemySp.sprite}</span>
           </div>
         </div>
 
-        {/* Bottom: player sprite (left) + status (right) */}
-        <div className="absolute left-3 bottom-3 right-3 flex items-end justify-between">
-          <div
-            className={`gba-pixel-shadow ${playerShake ? "pq-shake" : ""}`}
-            style={{ marginBottom: 4 }}
-          >
-            <div
-              className="grid place-items-center rounded-full"
-              style={{
-                width: 110, height: 110,
-                background: playerSp.color + "33",
-                border: `3px solid ${playerSp.color}`,
-                boxShadow: `inset 0 0 0 3px rgba(255,255,255,0.5)`,
-              }}
-            >
-              <span className="gba-sprite-back">{playerSp.sprite}</span>
-            </div>
+        {/* Player: sprite bottom-left, banner bottom-right */}
+        <div className="absolute left-3 bottom-[8%] z-10" style={{ width: 130 }}>
+          <div className="gba-platform-disc" style={{ width: 160, height: 30, left: -14, bottom: -16, position: "absolute" }} />
+          <div className={`relative ${playerShake ? "pq-shake" : ""}`}>
+            <span className="gba-sprite-back" style={{ fontSize: 96, display: "block", textAlign: "center" }}>{playerSp.sprite}</span>
           </div>
-          <StatusBox p={player} showHpNumbers showXp />
         </div>
+        <div className="absolute right-2 bottom-2 z-20"><Banner p={player} side="right" showHpNumbers showXp /></div>
       </div>
 
       {/* Dialog + menu (outside the GBA screen for mobile-friendliness) */}

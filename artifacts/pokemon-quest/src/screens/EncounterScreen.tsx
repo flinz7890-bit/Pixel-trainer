@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useGame, speciesOf, makePokemon, BattleState, OwnedPokemon } from "@/game/state";
 import { LOCATIONS, SPECIES } from "@/game/data";
 import Toast from "@/components/Toast";
@@ -22,6 +22,14 @@ export default function EncounterScreen() {
   const { state, dispatch } = useGame();
   const enemy = state.battle?.enemy as OwnedPokemon | undefined;
   const [shake, setShake] = useState(false);
+  const [logs, setLogs] = useState<string[]>(() =>
+    enemy ? [`A wild ${speciesOf(enemy).name.toUpperCase()} appeared!`] : [],
+  );
+  const logEnd = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    logEnd.current?.scrollTo({ top: logEnd.current.scrollHeight, behavior: "smooth" });
+  }, [logs]);
 
   if (!enemy) {
     return (
@@ -34,17 +42,22 @@ export default function EncounterScreen() {
     );
   }
   const sp = speciesOf(enemy);
+  const loc = LOCATIONS.find((l) => l.id === state.locationId)!;
+
+  const pushLog = (line: string) => setLogs((prev) => [...prev, line].slice(-12));
 
   const goBack = () => {
-    dispatch({ type: "SET_BATTLE", battle: null });
-    dispatch({ type: "SET_SCREEN", screen: "adventure" });
+    pushLog("Got away safely!");
+    setTimeout(() => {
+      dispatch({ type: "SET_BATTLE", battle: null });
+      dispatch({ type: "SET_SCREEN", screen: "adventure" });
+    }, 350);
   };
 
   const exploreAgain = () => {
     const active = state.team[0];
     if (!active || active.hp <= 0) {
       dispatch({ type: "TOAST", text: "Your Pokémon needs healing first!" });
-      goBack();
       return;
     }
     setShake(true);
@@ -59,7 +72,8 @@ export default function EncounterScreen() {
       turn: "player",
     };
     dispatch({ type: "SET_BATTLE", battle });
-    dispatch({ type: "TOAST", text: `A wild ${SPECIES[speciesId].name} appeared!` });
+    pushLog("You searched the tall grass...");
+    pushLog(`A wild ${SPECIES[speciesId].name.toUpperCase()} appeared!`);
   };
 
   const startBattle = () => {
@@ -68,89 +82,98 @@ export default function EncounterScreen() {
       dispatch({ type: "TOAST", text: "Your Pokémon needs healing first!" });
       return;
     }
-    dispatch({ type: "SET_SCREEN", screen: "battle" });
+    pushLog(`Go! ${speciesOf(active).name.toUpperCase()}!`);
+    setTimeout(() => dispatch({ type: "SET_SCREEN", screen: "battle" }), 200);
   };
 
   return (
-    <div className="pq-fade flex flex-col gap-4 py-3">
+    <div className="pq-fade flex flex-col gap-3 py-3 select-none">
       <Toast />
 
-      <div
-        className="rounded-2xl p-5 border-4 relative overflow-hidden"
-        style={{
-          borderColor: "#0b1220",
-          background:
-            "radial-gradient(120% 80% at 50% 30%, #cfeed4 0%, #8fcf9f 35%, #3d8b56 75%, #1f4a2c 100%)",
-          boxShadow: "inset 0 0 0 3px #1f3b27, 0 8px 24px rgba(0,0,0,0.45)",
-          minHeight: 320,
-        }}
-      >
-        <div className="font-pixel text-[10px] text-emerald-100 drop-shadow text-center mb-2">
-          A WILD POKÉMON APPEARED!
+      {/* Compact dark themed encounter card */}
+      <div className="pq-card p-3">
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-[10px] uppercase tracking-[.3em] text-teal-300/80">Wild Encounter</div>
+          <div className="text-[11px] text-slate-300/80">{loc.emoji} {loc.name}</div>
         </div>
 
-        <div className="flex flex-col items-center gap-3 mt-4">
-          <div className="gba-status" style={{ minWidth: 200 }}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1">
-                <span className="gba-name uppercase">{sp.name}</span>
-                <span style={{ color: enemy.gender === "M" ? "#1d4ed8" : "#be185d", fontWeight: 800 }}>
-                  {enemy.gender === "M" ? "♂" : "♀"}
-                </span>
-              </div>
-              <div className="gba-lvl">:L{enemy.level}</div>
-            </div>
-            <div className="text-[12px] text-slate-700 mt-0.5">
-              {sp.type.join(" / ")} • Catch {Math.round(sp.catchRate * 100)}%
-            </div>
-          </div>
-
+        <div className="flex items-center gap-3">
+          {/* Sprite */}
           <div
-            className={`gba-pixel-shadow ${shake ? "pq-shake" : "pq-pop"}`}
-            style={{ marginTop: 8 }}
+            className={`relative shrink-0 ${shake ? "pq-shake" : "pq-pop"}`}
+            style={{ width: 96, height: 96 }}
           >
             <div
-              className="grid place-items-center rounded-full"
+              className="absolute inset-0 rounded-full"
               style={{
-                width: 150, height: 150,
-                background: sp.color + "33",
-                border: `4px solid ${sp.color}`,
-                boxShadow: "inset 0 0 0 4px rgba(255,255,255,0.5)",
+                background: `radial-gradient(closest-side, ${sp.color}55, transparent 70%)`,
+              }}
+            />
+            <div
+              className="absolute inset-2 rounded-full grid place-items-center"
+              style={{
+                background: `linear-gradient(180deg, ${sp.color}33, rgba(0,0,0,0.25))`,
+                border: `2px solid ${sp.color}aa`,
+                boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.10)",
               }}
             >
-              <span style={{ fontSize: 110, lineHeight: 1 }}>{sp.sprite}</span>
+              <span style={{ fontSize: 56, lineHeight: 1 }}>{sp.sprite}</span>
             </div>
           </div>
 
-          <div className="flex gap-2 text-emerald-50 font-pixel text-[10px] mt-2">
-            <span>⚪ {state.pokeballs}</span>
-            <span>•</span>
-            <span>📍 {state.locationId}</span>
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-baseline gap-2">
+              <span className="font-pixel text-[12px] text-teal-200 truncate">{sp.name.toUpperCase()}</span>
+              <span style={{ color: enemy.gender === "M" ? "#60a5fa" : "#f472b6", fontWeight: 800 }}>
+                {enemy.gender === "M" ? "♂" : "♀"}
+              </span>
+              <span className="text-[11px] text-slate-300/80">Lv.{enemy.level}</span>
+            </div>
+            <div className="text-[11px] text-slate-300/80 mt-0.5">{sp.type.join(" / ")}</div>
+            <div className="grid grid-cols-3 gap-1 mt-2 text-[10px]">
+              <div className="rounded-md px-2 py-1 bg-white/5 border border-teal-300/15 text-center">
+                <div className="text-slate-400">Catch</div>
+                <div className="text-teal-200 font-bold">{Math.round(sp.catchRate * 100)}%</div>
+              </div>
+              <div className="rounded-md px-2 py-1 bg-white/5 border border-teal-300/15 text-center">
+                <div className="text-slate-400">Balls</div>
+                <div className="text-teal-200 font-bold">{state.pokeballs}</div>
+              </div>
+              <div className="rounded-md px-2 py-1 bg-white/5 border border-teal-300/15 text-center">
+                <div className="text-slate-400">Rarity</div>
+                <div className="text-teal-200 font-bold capitalize">{sp.rarity}</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="gba-dialog">A wild {sp.name.toUpperCase()} appeared! What will you do?</div>
-
-      <div className="flex flex-col gap-3">
-        <button
-          className="pq-btn pq-btn-primary text-lg py-4"
-          onClick={startBattle}
-        >
+      {/* Action buttons */}
+      <div className="flex flex-col gap-2">
+        <button className="pq-btn pq-btn-primary" onClick={startBattle}>
           🎯 CAPTURE
         </button>
-        <button
-          className="pq-btn pq-btn-amber text-lg py-4"
-          onClick={exploreAgain}
-        >
+        <button className="pq-btn pq-btn-amber" onClick={exploreAgain}>
           🔄 EXPLORE AGAIN
         </button>
-        <button
-          className="pq-btn pq-btn-rose text-lg py-4"
-          onClick={goBack}
-        >
+        <button className="pq-btn pq-btn-rose" onClick={goBack}>
           🏃 RUN
         </button>
+      </div>
+
+      {/* Command/log box matching site theme */}
+      <div
+        ref={logEnd}
+        className="pq-card p-3 max-h-32 overflow-y-auto font-gba text-[15px] leading-tight"
+        style={{ borderColor: "rgba(94,234,212,0.30)" }}
+      >
+        <div className="text-[9px] font-pixel text-teal-300/80 mb-1 tracking-widest">▾ COMMANDS</div>
+        {logs.map((line, i) => (
+          <div key={i} className="text-slate-100/90">
+            <span className="text-teal-300/70 mr-1">›</span>{line}
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -155,25 +155,106 @@ body {
 
 .gba-screen {
   background:
-    radial-gradient(70% 60% at 30% 20%, rgba(255,255,255,0.35), transparent 60%),
-    radial-gradient(120% 80% at 50% 40%, #fde68a 0%, #93c5fd 30%, #38bdf8 60%, #0ea5e9 100%);
-  border-radius: 14px;
+    linear-gradient(180deg,
+      #87cefa 0%,
+      #b6e5ff 28%,
+      #c8f0a3 42%,
+      #8fd66a 70%,
+      #6fbf52 100%);
+  border-radius: 12px;
   border: 4px solid #0b1220;
   box-shadow: inset 0 0 0 2px #1e3a8a, 0 8px 24px rgba(0,0,0,0.5);
-  padding: 14px;
+  padding: 10px;
   position: relative;
   overflow: hidden;
   font-family: 'VT323', 'Press Start 2P', monospace;
   color: #1b1b1b;
+  image-rendering: pixelated;
 }
-.gba-screen::after {
+.gba-screen::before {
   content: '';
   position: absolute;
-  inset: auto 0 -10% 0;
-  height: 45%;
-  background: radial-gradient(60% 80% at 50% 100%, #84cc16 0%, #65a30d 50%, transparent 80%);
+  left: 0; right: 0; bottom: 0; height: 38%;
+  background:
+    repeating-linear-gradient(90deg,
+      rgba(34,80,30,0.18) 0 3px, transparent 3px 9px),
+    linear-gradient(180deg, rgba(120,200,90,0) 0%, rgba(60,140,50,0.5) 100%);
   pointer-events: none;
-  opacity: 0.85;
+}
+
+/* Angled FireRed-style status banner */
+.gba-banner {
+  position: relative;
+  background: linear-gradient(180deg, #f7f7f7 0%, #d8dadd 100%);
+  color: #1b1b1b;
+  padding: 6px 18px 8px 14px;
+  font-family: 'VT323', monospace;
+  border: 2px solid #0b1220;
+  box-shadow:
+    inset 0 -3px 0 #9aa0a8,
+    inset 0 2px 0 #ffffff,
+    0 2px 0 #0b1220;
+  min-width: 180px;
+  line-height: 1.05;
+}
+.gba-banner.left {
+  border-radius: 4px 14px 14px 4px;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%);
+  padding-right: 24px;
+}
+.gba-banner.right {
+  border-radius: 14px 4px 4px 14px;
+  clip-path: polygon(14px 0, 100% 0, 100% 100%, 0 100%);
+  padding-left: 24px;
+}
+.gba-banner .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.gba-banner .name { font-weight: 700; font-size: 18px; letter-spacing: 0.5px; }
+.gba-banner .lvl { font-size: 16px; }
+.gba-banner .hp-row { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+.gba-banner .hp-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: #ffd84a;
+  background: #d62828;
+  padding: 2px 4px;
+  border-radius: 2px;
+  letter-spacing: 0.5px;
+}
+.gba-banner .hp-track-thin {
+  flex: 1;
+  height: 6px;
+  background: #2a2a2a;
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid #0b1220;
+}
+.gba-banner .hp-fill {
+  height: 100%;
+  background: linear-gradient(180deg, #6ee7b7, #16a34a);
+  transition: width .5s ease, background .3s ease;
+}
+.gba-banner .hp-fill.mid { background: linear-gradient(180deg, #fde68a, #f59e0b); }
+.gba-banner .hp-fill.low { background: linear-gradient(180deg, #fca5a5, #dc2626); }
+.gba-banner .hp-num { text-align: right; font-size: 14px; margin-top: 1px; }
+.gba-banner .xp-track {
+  margin-top: 2px;
+  height: 3px;
+  background: #1b1b1b;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.gba-banner .xp-fill {
+  height: 100%;
+  background: linear-gradient(180deg, #67e8f9, #06b6d4);
+  transition: width .4s ease;
+}
+
+.gba-platform-disc {
+  position: absolute;
+  border-radius: 50%;
+  background:
+    radial-gradient(closest-side, rgba(40,90,30,0.55) 0%, rgba(40,90,30,0.35) 60%, rgba(40,90,30,0) 80%);
+  filter: blur(0.5px);
 }
 
 .gba-platform {
