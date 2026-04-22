@@ -6,6 +6,7 @@ import AdventureScreen from "@/screens/AdventureScreen";
 import BattleScreen from "@/screens/BattleScreen";
 import EncounterScreen from "@/screens/EncounterScreen";
 import TrainerCardScreen from "@/screens/TrainerCardScreen";
+import CommandBox from "@/components/CommandBox";
 import PokeCenterScreen from "@/screens/PokeCenterScreen";
 import PokeMartScreen from "@/screens/PokeMartScreen";
 import GymScreen from "@/screens/GymScreen";
@@ -15,21 +16,29 @@ import { GameProvider, useGame } from "@/game/state";
 
 function ScreenRouter() {
   const { state } = useGame();
+  const showLog = !["welcome", "menu", "starter"].includes(state.screen);
+  let screen;
   switch (state.screen) {
-    case "welcome": return <WelcomeScreen />;
-    case "menu": return <HomeScreen />;
-    case "starter": return <StarterScreen />;
-    case "adventure": return <AdventureScreen />;
-    case "encounter": return <EncounterScreen />;
-    case "battle": return <BattleScreen />;
-    case "card": return <TrainerCardScreen />;
-    case "center": return <PokeCenterScreen />;
-    case "mart": return <PokeMartScreen />;
-    case "gym": return <GymScreen />;
-    case "pokedex": return <PokedexScreen />;
-    case "settings": return <SettingsScreen />;
-    default: return <WelcomeScreen />;
+    case "welcome": screen = <WelcomeScreen />; break;
+    case "menu": screen = <HomeScreen />; break;
+    case "starter": screen = <StarterScreen />; break;
+    case "adventure": screen = <AdventureScreen />; break;
+    case "encounter": screen = <EncounterScreen />; break;
+    case "battle": screen = <BattleScreen />; break;
+    case "card": screen = <TrainerCardScreen />; break;
+    case "center": screen = <PokeCenterScreen />; break;
+    case "mart": screen = <PokeMartScreen />; break;
+    case "gym": screen = <GymScreen />; break;
+    case "pokedex": screen = <PokedexScreen />; break;
+    case "settings": screen = <SettingsScreen />; break;
+    default: screen = <WelcomeScreen />;
   }
+  return (
+    <>
+      {screen}
+      {showLog && <CommandBox />}
+    </>
+  );
 }
 
 function App() {

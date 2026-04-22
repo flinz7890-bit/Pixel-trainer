@@ -79,7 +79,10 @@ export default function BattleScreen() {
   const playerSp = speciesOf(player);
   const enemySp = speciesOf(enemy);
 
-  const log = (lines: string[]) => dispatch({ type: "ADD_LOG", lines });
+  const log = (lines: string[]) => {
+    dispatch({ type: "ADD_LOG", lines });
+    dispatch({ type: "LOG", lines });
+  };
   const setBusy = (busy: boolean) => dispatch({ type: "PATCH_BATTLE", patch: { busy } });
 
   const endBattleAfter = async (outcome: "won" | "lost" | "fled" | "caught") => {
@@ -280,11 +283,32 @@ export default function BattleScreen() {
           )}
           {menu === "mon" && (
             <div className="gba-menu-grid">
-              {state.team.map((p, i) => (
-                <button key={p.uid} className="gba-menu-btn has-arrow" disabled>
-                  {i === 0 ? "▶ " : ""}{speciesOf(p).name.toUpperCase()} L{p.level}
-                </button>
-              ))}
+              {state.team.map((p, i) => {
+                const isActive = i === 0;
+                const fainted = p.hp <= 0;
+                return (
+                  <button
+                    key={p.uid}
+                    className={`gba-menu-btn has-arrow ${isActive ? "is-selected" : ""}`}
+                    disabled={battle.busy || isActive || fainted}
+                    onClick={async () => {
+                      if (battle.busy || isActive || fainted) return;
+                      setMenu("main");
+                      setBusy(true);
+                      const outName = speciesOf(state.team[0]).name.toUpperCase();
+                      const inName = speciesOf(p).name.toUpperCase();
+                      log([`${outName}, come back!`, `Go! ${inName}!`]);
+                      dispatch({ type: "SWAP_ACTIVE", withIndex: i });
+                      await sleep(800);
+                      dispatch({ type: "PATCH_BATTLE", patch: { turn: "enemy" } });
+                      await enemyTurn();
+                    }}
+                  >
+                    {isActive ? "▶ " : ""}{speciesOf(p).name.toUpperCase()} L{p.level}
+                    {fainted ? " (KO)" : ""}
+                  </button>
+                );
+              })}
               <button className="gba-menu-btn has-arrow col-span-2" onClick={() => setMenu("main")}>← BACK</button>
             </div>
           )}

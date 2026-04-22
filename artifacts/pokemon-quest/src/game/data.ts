@@ -68,6 +68,8 @@ export interface Location {
   id: string;
   name: string;
   emoji: string;
+  isTown?: boolean;
+  gymId?: string;
   encounters: { speciesId: number; weight: number; minLevel: number; maxLevel: number }[];
 }
 
@@ -84,6 +86,13 @@ export const LOCATIONS: Location[] = [
     ],
   },
   {
+    id: "viridian-city",
+    name: "Viridian City",
+    emoji: "🏘️",
+    isTown: true,
+    encounters: [],
+  },
+  {
     id: "viridian",
     name: "Viridian Forest",
     emoji: "🌲",
@@ -93,6 +102,14 @@ export const LOCATIONS: Location[] = [
       { speciesId: 25, weight: 1, minLevel: 5, maxLevel: 7 },
       { speciesId: 16, weight: 2, minLevel: 4, maxLevel: 6 },
     ],
+  },
+  {
+    id: "pewter",
+    name: "Pewter City",
+    emoji: "🏛️",
+    isTown: true,
+    gymId: "brock",
+    encounters: [],
   },
   {
     id: "moon",
@@ -105,6 +122,14 @@ export const LOCATIONS: Location[] = [
     ],
   },
   {
+    id: "cerulean",
+    name: "Cerulean City",
+    emoji: "💧",
+    isTown: true,
+    gymId: "misty",
+    encounters: [],
+  },
+  {
     id: "celadon",
     name: "Celadon Outskirts",
     emoji: "🏙️",
@@ -114,6 +139,14 @@ export const LOCATIONS: Location[] = [
       { speciesId: 41, weight: 4, minLevel: 9, maxLevel: 12 },
       { speciesId: 19, weight: 2, minLevel: 8, maxLevel: 11 },
     ],
+  },
+  {
+    id: "vermilion",
+    name: "Vermilion City",
+    emoji: "⚓",
+    isTown: true,
+    gymId: "surge",
+    encounters: [],
   },
 ];
 

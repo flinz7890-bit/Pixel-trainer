@@ -45,6 +45,7 @@ export interface GameState {
   battle: BattleState | null;
   toast: string | null;
   audioOn: boolean;
+  commandLog: string[];
 }
 
 const SAVE_KEY = "pokemon-quest-save-v1";
@@ -86,6 +87,7 @@ const initialState: GameState = {
   battle: null,
   toast: null,
   audioOn: true,
+  commandLog: [],
 };
 
 type Action =
@@ -112,7 +114,10 @@ type Action =
   | { type: "SEE_POKEMON"; speciesId: number }
   | { type: "CATCH_POKEMON"; speciesId: number }
   | { type: "TOAST"; text: string | null }
-  | { type: "TOGGLE_AUDIO" };
+  | { type: "TOGGLE_AUDIO" }
+  | { type: "LOG"; lines: string[] }
+  | { type: "CLEAR_LOG" }
+  | { type: "SWAP_ACTIVE"; withIndex: number };
 
 function reducer(state: GameState, action: Action): GameState {
   switch (action.type) {
@@ -210,6 +215,17 @@ function reducer(state: GameState, action: Action): GameState {
       return { ...state, toast: action.text };
     case "TOGGLE_AUDIO":
       return { ...state, audioOn: !state.audioOn };
+    case "LOG":
+      return { ...state, commandLog: [...state.commandLog, ...action.lines].slice(-60) };
+    case "CLEAR_LOG":
+      return { ...state, commandLog: [] };
+    case "SWAP_ACTIVE": {
+      const i = action.withIndex;
+      if (i <= 0 || i >= state.team.length) return state;
+      const team = [...state.team];
+      [team[0], team[i]] = [team[i], team[0]];
+      return { ...state, team };
+    }
     default:
       return state;
   }
@@ -244,7 +260,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       // back-compat: ensure gender exists
       const team = (parsed.team || []).map((p) => ({ ...p, gender: p.gender || randGender() }));
       const storage = (parsed.storage || []).map((p) => ({ ...p, gender: p.gender || randGender() }));
-      dispatch({ type: "LOAD", payload: { ...parsed, team, storage } });
+      dispatch({ type: "LOAD", payload: { ...parsed, team, storage, commandLog: parsed.commandLog || [] } });
       return true;
     } catch { return false; }
   };

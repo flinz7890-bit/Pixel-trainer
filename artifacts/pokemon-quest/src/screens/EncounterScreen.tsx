@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useGame, speciesOf, makePokemon, BattleState, OwnedPokemon } from "@/game/state";
 import { LOCATIONS, SPECIES } from "@/game/data";
 import Toast from "@/components/Toast";
@@ -22,14 +22,7 @@ export default function EncounterScreen() {
   const { state, dispatch } = useGame();
   const enemy = state.battle?.enemy as OwnedPokemon | undefined;
   const [shake, setShake] = useState(false);
-  const [logs, setLogs] = useState<string[]>(() =>
-    enemy ? [`A wild ${speciesOf(enemy).name.toUpperCase()} appeared!`] : [],
-  );
-  const logEnd = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    logEnd.current?.scrollTo({ top: logEnd.current.scrollHeight, behavior: "smooth" });
-  }, [logs]);
+  const pushLog = (line: string) => dispatch({ type: "LOG", lines: [line] });
 
   if (!enemy) {
     return (
@@ -43,8 +36,6 @@ export default function EncounterScreen() {
   }
   const sp = speciesOf(enemy);
   const loc = LOCATIONS.find((l) => l.id === state.locationId)!;
-
-  const pushLog = (line: string) => setLogs((prev) => [...prev, line].slice(-12));
 
   const goBack = () => {
     pushLog("Got away safely!");
@@ -162,19 +153,6 @@ export default function EncounterScreen() {
         </button>
       </div>
 
-      {/* Command/log box matching site theme */}
-      <div
-        ref={logEnd}
-        className="pq-card p-3 max-h-32 overflow-y-auto font-gba text-[15px] leading-tight"
-        style={{ borderColor: "rgba(94,234,212,0.30)" }}
-      >
-        <div className="text-[9px] font-pixel text-teal-300/80 mb-1 tracking-widest">▾ COMMANDS</div>
-        {logs.map((line, i) => (
-          <div key={i} className="text-slate-100/90">
-            <span className="text-teal-300/70 mr-1">›</span>{line}
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
