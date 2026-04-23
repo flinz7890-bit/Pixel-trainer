@@ -59,6 +59,7 @@ export interface GameState {
   toast: string | null;
   audioOn: boolean;
   commandLog: string[];
+  wildEncounters: number;
 }
 
 const SAVE_KEY = "pokemon-quest-save-v1";
@@ -115,6 +116,7 @@ const initialState: GameState = {
   toast: null,
   audioOn: true,
   commandLog: [],
+  wildEncounters: 0,
 };
 
 type Action =
@@ -150,6 +152,7 @@ type Action =
   | { type: "MARK_EXPLORED"; locationId: string }
   | { type: "MARK_CLEARED"; locationId: string }
   | { type: "MARK_VISITED"; locationId: string }
+  | { type: "INC_HUNT" }
   | { type: "RESPAWN_AT_HEAL" };
 
 function reducer(state: GameState, action: Action): GameState {
@@ -289,6 +292,8 @@ function reducer(state: GameState, action: Action): GameState {
     }
     case "MARK_VISITED":
       return { ...state, visited: { ...state.visited, [action.locationId]: true } };
+    case "INC_HUNT":
+      return { ...state, wildEncounters: (state.wildEncounters || 0) + 1 };
     case "RESPAWN_AT_HEAL": {
       const team = state.team.map((p) => ({ ...p, hp: p.maxHp }));
       return { ...state, team, locationId: state.lastHealLocationId, battle: null };

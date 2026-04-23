@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useGame, speciesOf, OwnedPokemon, makePokemon, xpToNext } from "@/game/state";
-import { Move, SPECIES, GYMS, PokeType } from "@/game/data";
+import { useGame, speciesOf, OwnedPokemon, makePokemon } from "@/game/state";
+import { Move, SPECIES, GYMS, LOCATIONS, PokeType } from "@/game/data";
 import Toast from "@/components/Toast";
 import { typeColor } from "@/components/TypeBadge";
 
@@ -12,80 +12,45 @@ function calcDamage(attacker: OwnedPokemon, move: Move) {
   return Math.max(1, Math.floor(base * variance * 0.6));
 }
 
-function GenderIcon({ g }: { g: "M" | "F" }) {
-  return (
-    <span style={{ color: g === "M" ? "#60a5fa" : "#f472b6", fontWeight: 800 }}>
-      {g === "M" ? "♂" : "♀"}
-    </span>
-  );
-}
-
-function StatBox({
-  p,
-  side,
-  showHpNumbers,
-  showXp,
-}: {
-  p: OwnedPokemon;
-  side: "enemy" | "player";
-  showHpNumbers?: boolean;
-  showXp?: boolean;
-}) {
-  const sp = speciesOf(p);
+function HpBar({ p, big }: { p: OwnedPokemon; big?: boolean }) {
   const pct = Math.max(0, (p.hp / p.maxHp) * 100);
-  const cls =
-    side === "enemy"
-      ? "enemy"
-      : pct > 50
-      ? ""
-      : pct > 20
-      ? "mid"
-      : "low";
+  const color =
+    pct > 50 ? "linear-gradient(180deg, #4ade80, #22c55e)"
+      : pct > 20 ? "linear-gradient(180deg, #fde68a, #f59e0b)"
+        : "linear-gradient(180deg, #fca5a5, #ef4444)";
   return (
-    <div className={`bt-statbox ${side}`}>
-      <div className="flex items-center justify-between gap-2">
-        <div className="name uppercase">
-          <span>{sp.name}</span>
-          <GenderIcon g={p.gender} />
-        </div>
-        <div className="lvl">L{p.level}</div>
-      </div>
-      <div className="bt-hp-track">
-        <div className={`bt-hp-fill ${cls}`} style={{ width: `${pct}%` }} />
-      </div>
-      {showHpNumbers && (
-        <div className="bt-hp-num">
-          {p.hp}/{p.maxHp}
-        </div>
-      )}
-      {showXp && (
-        <div className="bt-xp-track">
-          <div
-            className="bt-xp-fill"
-            style={{ width: `${(p.xp / xpToNext(p.level)) * 100}%` }}
-          />
-        </div>
-      )}
+    <div className={big ? "wb-hp-track wb-hp-big" : "wb-hp-track"}>
+      <div className="wb-hp-fill" style={{ width: `${pct}%`, background: color }} />
     </div>
   );
 }
 
-function colorClass(line: string) {
-  const l = line.toLowerCase();
-  if (/(damage|fainted|hurt|hit|broke free)/.test(l)) return "dmg";
-  if (/(potion|ball|received|caught|gained|heal|earned)/.test(l)) return "item";
-  if (/(used|won|gotcha|begin|joined|evolved|appeared|safely)/.test(l)) return "ok";
-  return "info";
+function TypeChip({ t }: { t: PokeType }) {
+  const c = typeColor(t);
+  return (
+    <span
+      className="wb-typechip"
+      style={{
+        background: `${c}33`,
+        border: `1px solid ${c}88`,
+        color: c,
+      }}
+    >
+      {t}
+    </span>
+  );
 }
 
 export default function BattleScreen() {
   const { state, dispatch } = useGame();
   const [enemyShake, setEnemyShake] = useState(false);
   const [playerShake, setPlayerShake] = useState(false);
-  const [menu, setMenu] = useState<"main" | "fight" | "bag" | "mon">("main");
+  const [menu, setMenu] = useState<"main" | "switch" | "bag">("main");
+  const [turnNum, setTurnNum] = useState(1);
 
   const player = state.team[0];
   const battle = state.battle;
+  const loc = LOCATIONS.find((l) => l.id === state.locationId);
 
   useEffect(() => {
     if (!battle || !player) {
@@ -150,7 +115,6 @@ export default function BattleScreen() {
     if (newHp <= 0) {
       log([`${playerSp.name} fainted!`]);
       await sleep(500);
-      // Find another non-fainted teammate
       const team = state.team;
       const altIdx = team.findIndex((p, i) => i !== 0 && p.hp > 0);
       if (altIdx > 0) {
@@ -158,12 +122,14 @@ export default function BattleScreen() {
         log([`Go! ${inName}!`]);
         dispatch({ type: "SWAP_ACTIVE", withIndex: altIdx });
         await sleep(700);
+        setTurnNum((n) => n + 1);
         dispatch({ type: "PATCH_BATTLE", patch: { turn: "player", busy: false } });
         return;
       }
       await endBattleAfter("lost");
       return;
     }
+    setTurnNum((n) => n + 1);
     dispatch({ type: "PATCH_BATTLE", patch: { turn: "player", busy: false } });
   };
 
@@ -198,7 +164,6 @@ export default function BattleScreen() {
 
   const onFight = async (move: Move) => {
     if (battle.busy || battle.turn !== "player" || battle.outcome) return;
-    setMenu("main");
     setBusy(true);
     log([`${playerSp.name} used ${move.name}!`]);
     setEnemyShake(true);
@@ -281,164 +246,169 @@ export default function BattleScreen() {
       dispatch({ type: "TOAST", text: "Can't run from a Trainer battle!" });
       return;
     }
-    setMenu("main");
     setBusy(true);
     log(["Got away safely!"]);
     await sleep(500);
     await endBattleAfter("fled");
   };
 
-  const dialogText = battle.busy
-    ? battle.log[battle.log.length - 1] || ""
-    : `What will ${playerSp.name.toUpperCase()} do?`;
+  const exitBattle = () => {
+    if (battle.isGym || battle.isTrainer) {
+      dispatch({ type: "TOAST", text: "Can't escape this battle!" });
+      return;
+    }
+    dispatch({ type: "SET_BATTLE", battle: null });
+    dispatch({ type: "SET_SCREEN", screen: "adventure" });
+  };
 
-  const battleLines = battle.log.slice(-12);
-  const turnLabel = battle.turn === "player" ? "YOUR TURN" : "ENEMY TURN";
+  // Last meaningful message for the message panel
+  const battleLines = battle.log.slice(-3);
+  const headerLabel = battle.isGym
+    ? "GYM BATTLE"
+    : battle.isTrainer
+      ? "TRAINER BATTLE"
+      : "WILD BATTLE";
 
   return (
     <div className="pq-fade flex flex-col gap-3 py-2 select-none">
       <Toast />
 
-      {/* Turn indicator */}
-      <div className="flex items-center justify-between px-1">
-        <div
-          className="font-mono-pq text-[10px] tracking-[.18em] uppercase px-2 py-1 rounded-full"
-          style={{
-            background:
-              battle.turn === "player" ? "rgba(74,222,128,0.14)" : "rgba(244,63,94,0.14)",
-            color: battle.turn === "player" ? "#4ade80" : "#f43f5e",
-            border:
-              battle.turn === "player"
-                ? "1px solid rgba(74,222,128,0.40)"
-                : "1px solid rgba(244,63,94,0.40)",
-          }}
-        >
-          ▶ {turnLabel}
+      {/* Header bar */}
+      <div className="wb-header">
+        <div className="flex items-center gap-2">
+          <button className="wb-close" onClick={exitBattle} aria-label="Close battle">×</button>
+          <span className="wb-header-title">{headerLabel}</span>
         </div>
-        {(battle.isGym || battle.isTrainer) && (
-          <div
-            className="font-mono-pq text-[10px] tracking-widest uppercase px-2 py-1 rounded-full"
-            style={{
-              background: "rgba(250,204,21,0.14)",
-              color: "#facc15",
-              border: "1px solid rgba(250,204,21,0.40)",
-            }}
-          >
-            {battle.isGym ? "🏟 GYM BATTLE" : `⚔ ${battle.trainerLabel || "TRAINER"}`}
-          </div>
-        )}
+        <div className="wb-header-turn">Turn {turnNum}</div>
       </div>
+      <div className="wb-divider" />
 
-      {/* Battle arena */}
-      <div className="bt-arena bt-scanlines">
-        {/* Enemy stat box: top-left */}
-        <div className="absolute left-3 top-3 z-20 pq-slide-in-right">
-          <StatBox p={enemy} side="enemy" />
-        </div>
-
-        {/* Enemy sprite: top-right */}
-        <div
-          className="absolute right-5 top-[24%] z-10 pq-slide-in-right"
-          style={{ width: 130 }}
-        >
-          <div
-            className="bt-platform"
-            style={{ width: 160, height: 30, left: -15, bottom: -18, position: "absolute" }}
-          />
-          <div className={`relative ${enemyShake ? "pq-shake" : ""}`}>
-            <span
-              className="bt-sprite"
-              style={{
-                display: "block",
-                textAlign: "center",
-                color: typeColor((enemySp.type[0] as PokeType) || "Normal"),
-              }}
-            >
+      {/* Arena card */}
+      <div className="wb-arena">
+        {/* Enemy row: stat box left, sprite right */}
+        <div className="wb-enemy-row">
+          <div className="wb-statcard">
+            <div className="wb-statcard-row">
+              <span className="wb-name">{enemySp.name}</span>
+              <span className="wb-lvl">Lv{enemy.level}</span>
+            </div>
+            <div className="wb-types">
+              {enemySp.type.map((t) => <TypeChip key={t} t={t} />)}
+            </div>
+            <div className="wb-hp-num">{enemy.hp}/{enemy.maxHp}</div>
+            <HpBar p={enemy} big />
+          </div>
+          <div className={`wb-enemy-sprite ${enemyShake ? "pq-shake" : ""}`}>
+            <span style={{
+              fontSize: 92,
+              lineHeight: 1,
+              color: typeColor(enemySp.type[0]),
+              filter: "drop-shadow(0 5px 0 rgba(0,0,0,0.45))",
+            }}>
               {enemySp.sprite}
             </span>
           </div>
         </div>
 
-        {/* Player sprite: bottom-left */}
-        <div className="absolute left-5 bottom-[10%] z-10" style={{ width: 160 }}>
-          <div
-            className="bt-platform"
-            style={{ width: 190, height: 34, left: -15, bottom: -20, position: "absolute" }}
-          />
-          <div className={`relative ${playerShake ? "pq-shake" : "pq-bob"}`}>
-            <span
-              className="bt-sprite-back"
-              style={{ display: "block", textAlign: "center" }}
-            >
+        {/* Player row: sprite left, stat box right */}
+        <div className="wb-player-row">
+          <div className={`wb-player-sprite ${playerShake ? "pq-shake" : "pq-bob"}`}>
+            <span style={{
+              fontSize: 96,
+              lineHeight: 1,
+              filter: "drop-shadow(0 5px 0 rgba(0,0,0,0.45))",
+            }}>
               {playerSp.sprite}
             </span>
           </div>
-        </div>
-
-        {/* Player stat box: bottom-right */}
-        <div className="absolute right-3 bottom-3 z-20">
-          <StatBox p={player} side="player" showHpNumbers showXp />
+          <div className="wb-statcard">
+            <div className="wb-statcard-row">
+              <span className="wb-name">{playerSp.name}</span>
+              <span className="wb-lvl">Lv{player.level}</span>
+            </div>
+            <HpBar p={player} big />
+            <div className="wb-statcard-row wb-statcard-bottom">
+              <span className="wb-hp-num">{player.hp}/{player.maxHp}</span>
+              <span className="wb-atk">ATK:{player.atk}</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Dialog */}
-      <div className="bt-dialog">
-        <span>
-          {dialogText}
-          {!battle.busy && <span className="pq-cursor">▍</span>}
-        </span>
+      {/* Message panel */}
+      <div className="wb-msg">
+        {battleLines.length === 0
+          ? <span>. A wild {enemySp.name} (Lv{enemy.level}) appeared in {loc?.name || "the wild"}!</span>
+          : battleLines.map((line, i) => (
+            <div key={i}>· {line}</div>
+          ))}
       </div>
 
-      {/* Action menu */}
-      <div>
-        {menu === "main" && (
-          <div className="bt-menu-grid">
+      {/* Choose a move */}
+      {menu === "main" && (
+        <>
+          <div className="wb-section-label">CHOOSE A MOVE</div>
+          <div className="wb-moves">
+            {playerSp.moves.map((m) => (
+              <button
+                key={m.name}
+                className="wb-move-btn"
+                disabled={battle.busy || !!battle.outcome}
+                onClick={() => onFight(m)}
+              >
+                <div className="wb-move-name">{m.name}</div>
+                <div className="wb-move-pwr">PWR: {m.power}</div>
+              </button>
+            ))}
+          </div>
+
+          <div className="wb-bottom-row">
             <button
-              className="bt-menu-btn bt-menu-fight"
+              className="wb-bottom-btn"
               disabled={battle.busy || !!battle.outcome}
-              onClick={() => setMenu("fight")}
+              onClick={() => setMenu("switch")}
             >
-              ⚔ Fight
+              Switch
             </button>
             <button
-              className="bt-menu-btn bt-menu-bag"
-              disabled={battle.busy || !!battle.outcome}
-              onClick={() => setMenu("bag")}
-            >
-              🎒 Bag
-            </button>
-            <button
-              className="bt-menu-btn bt-menu-mon"
-              disabled={battle.busy || !!battle.outcome}
-              onClick={() => setMenu("mon")}
-            >
-              🐾 Monster
-            </button>
-            <button
-              className="bt-menu-btn bt-menu-run"
+              className="wb-bottom-btn"
               disabled={battle.busy || !!battle.outcome || !!battle.isGym || !!battle.isTrainer}
               onClick={onRun}
             >
-              🏃 Run
+              Run
+            </button>
+            <button
+              className="wb-bottom-btn"
+              disabled={battle.busy || !!battle.outcome || !!battle.isGym || !!battle.isTrainer}
+              onClick={onCatch}
+            >
+              Pokeballs
             </button>
           </div>
-        )}
-        {menu === "mon" && (
-          <div className="bt-menu-grid">
+          {state.potions > 0 && (
+            <button
+              className="wb-bottom-btn wb-potion-btn"
+              disabled={battle.busy || !!battle.outcome}
+              onClick={onPotion}
+            >
+              Use Potion ×{state.potions}
+            </button>
+          )}
+        </>
+      )}
+
+      {menu === "switch" && (
+        <>
+          <div className="wb-section-label">SWITCH POKÉMON</div>
+          <div className="wb-moves">
             {state.team.map((p, i) => {
               const isActive = i === 0;
               const fainted = p.hp <= 0;
               const sp = speciesOf(p);
-              const tc = typeColor(sp.type[0]);
               return (
                 <button
                   key={p.uid}
-                  className="bt-menu-btn"
-                  style={{
-                    borderColor: isActive ? tc : undefined,
-                    color: isActive ? tc : undefined,
-                    boxShadow: isActive ? `inset 0 0 0 1px ${tc}55, 0 0 18px ${tc}30` : undefined,
-                  }}
+                  className="wb-move-btn"
                   disabled={battle.busy || isActive || fainted}
                   onClick={async () => {
                     if (battle.busy || isActive || fainted) return;
@@ -453,95 +423,20 @@ export default function BattleScreen() {
                     await enemyTurn();
                   }}
                 >
-                  <span style={{ fontSize: 18, marginRight: 6 }}>{sp.sprite}</span>
-                  {sp.name.toUpperCase()} L{p.level}
-                  {fainted ? " (KO)" : ""}
-                </button>
-              );
-            })}
-            <button
-              className="bt-menu-btn bt-menu-back col-span-2"
-              onClick={() => setMenu("main")}
-            >
-              ← Back
-            </button>
-          </div>
-        )}
-        {menu === "fight" && (
-          <div className="bt-menu-grid">
-            {playerSp.moves.map((m) => {
-              const tc = typeColor(m.type as PokeType);
-              return (
-                <button
-                  key={m.name}
-                  className="bt-menu-btn"
-                  style={{
-                    borderColor: `${tc}88`,
-                    color: tc,
-                    boxShadow: `inset 0 0 0 1px ${tc}33, 0 0 14px ${tc}22`,
-                  }}
-                  disabled={battle.busy}
-                  onClick={() => onFight(m)}
-                >
-                  <div className="flex flex-col items-center">
-                    <span>{m.name}</span>
-                    <span
-                      className="text-[10px] mt-1 font-mono-pq"
-                      style={{ color: "#a1a1aa" }}
-                    >
-                      {m.type.toUpperCase()} · PWR {m.power} · PP ∞
-                    </span>
+                  <div className="wb-move-name">
+                    <span style={{ marginRight: 6 }}>{sp.sprite}</span>
+                    {sp.name}
+                  </div>
+                  <div className="wb-move-pwr">
+                    Lv{p.level} · {p.hp}/{p.maxHp}{fainted ? " (KO)" : ""}{isActive ? " (active)" : ""}
                   </div>
                 </button>
               );
             })}
-            <button
-              className="bt-menu-btn bt-menu-back col-span-2"
-              onClick={() => setMenu("main")}
-            >
-              ← Back
-            </button>
           </div>
-        )}
-        {menu === "bag" && (
-          <div className="bt-menu-grid">
-            <button
-              className="bt-menu-btn bt-menu-bag"
-              disabled={battle.busy}
-              onClick={onPotion}
-            >
-              🧪 Potion ×{state.potions}
-            </button>
-            <button
-              className="bt-menu-btn bt-menu-bag"
-              disabled={battle.busy || !!battle.isGym || !!battle.isTrainer}
-              onClick={onCatch}
-            >
-              ⚪ Poké Ball ×{state.pokeballs}
-            </button>
-            <button
-              className="bt-menu-btn bt-menu-back col-span-2"
-              onClick={() => setMenu("main")}
-            >
-              ← Back
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Battle command log */}
-      <div className="cmd-log">
-        <div className="font-mono-pq text-[10px] tracking-[.18em] uppercase mb-1.5" style={{ color: "#4ade80" }}>
-          ▾ battle_log
-        </div>
-        {battleLines.length === 0 && <div className="empty">Waiting for action...</div>}
-        {battleLines.map((line, i) => (
-          <div key={i} className="row">
-            <span className="prefix">&gt;</span>
-            <span className={colorClass(line)}>{line}</span>
-          </div>
-        ))}
-      </div>
+          <button className="wb-bottom-btn" onClick={() => setMenu("main")}>← Back</button>
+        </>
+      )}
     </div>
   );
 }

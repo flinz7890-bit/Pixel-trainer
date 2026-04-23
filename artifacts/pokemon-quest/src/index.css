@@ -510,3 +510,362 @@ body::before {
 }
 
 * { box-sizing: border-box; }
+
+/* ============ Encounter screen (capture UI) ============ */
+.enc-region {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 14px;
+  color: #e5e7eb;
+  font-weight: 600;
+}
+.enc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239,68,68,0.7);
+}
+.enc-region-name { color: #fff; }
+.enc-region-sep { color: #6b7280; }
+.enc-region-lv { color: #d4d4d8; }
+.enc-hunts {
+  margin-top: 4px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11.5px;
+  color: #9ca3af;
+  letter-spacing: 0.4px;
+}
+
+.enc-scene {
+  position: relative;
+  border: 2px solid #4ade80;
+  border-radius: 14px;
+  overflow: hidden;
+  background:
+    radial-gradient(closest-side at 50% 60%, rgba(74,222,128,0.12), transparent 70%),
+    linear-gradient(180deg, #0d2f1f 0%, #0a2418 70%, #061a10 100%);
+  min-height: 320px;
+  aspect-ratio: 4 / 3;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 20px rgba(74,222,128,0.18) inset;
+}
+.enc-scene-stripes {
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(255,255,255,0.025) 0,
+    rgba(255,255,255,0.025) 18px,
+    transparent 18px,
+    transparent 80px
+  );
+  pointer-events: none;
+}
+.enc-scene-floor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 22px;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(74,222,128,0.55) 0,
+    rgba(74,222,128,0.55) 4px,
+    transparent 4px,
+    transparent 10px
+  );
+  opacity: 0.55;
+}
+.enc-sprite {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+}
+
+.enc-caption {
+  text-align: center;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 14px;
+  color: #facc15;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 4px 0;
+}
+.enc-caption-text { color: #facc15; }
+.enc-caption-name { color: #fff; font-weight: 700; }
+.enc-caption-lv {
+  display: inline-block;
+  background: rgba(255,255,255,0.10);
+  color: #e5e7eb;
+  font-size: 11.5px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.enc-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 4px 2px 8px;
+}
+.enc-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 2px solid #4ade80;
+  background: rgba(13, 47, 31, 0.5);
+  border-radius: 12px;
+  padding: 18px 12px;
+  color: #4ade80;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 2.5px;
+  cursor: pointer;
+  transition: all .2s ease;
+  min-height: 80px;
+}
+.enc-action-btn:hover:not(:disabled) {
+  background: rgba(74,222,128,0.14);
+  box-shadow: 0 0 18px rgba(74,222,128,0.30);
+  transform: translateY(-1px);
+}
+.enc-action-btn:active:not(:disabled) { transform: translateY(0); }
+
+/* ============ Wild Battle UI ============ */
+.wb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+.wb-header-title {
+  color: #ef4444;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+.wb-header-turn {
+  color: #9ca3af;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+.wb-close {
+  background: transparent;
+  border: none;
+  color: #ef4444;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+  font-weight: 600;
+}
+.wb-close:hover { color: #f87171; }
+.wb-divider {
+  height: 1px;
+  background: linear-gradient(90deg, #ef4444, transparent);
+  margin: -4px 0 0;
+}
+
+.wb-arena {
+  background: rgba(8, 14, 28, 0.8);
+  border: 1px solid rgba(96,165,250,0.20);
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+}
+.wb-enemy-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.wb-player-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.wb-statcard {
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 8px;
+  padding: 8px 10px;
+  min-width: 0;
+  flex: 1 1 60%;
+  max-width: 240px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+}
+.wb-statcard-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.wb-statcard-bottom {
+  margin-top: 4px;
+}
+.wb-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+.wb-lvl {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: #d4d4d8;
+  font-weight: 700;
+}
+.wb-types {
+  display: flex;
+  gap: 4px;
+  margin: 6px 0;
+  flex-wrap: wrap;
+}
+.wb-typechip {
+  display: inline-block;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.4px;
+}
+.wb-hp-track {
+  height: 6px;
+  background: #1f2937;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 4px;
+  border: 1px solid rgba(0,0,0,0.40);
+}
+.wb-hp-track.wb-hp-big { height: 8px; }
+.wb-hp-fill {
+  height: 100%;
+  transition: width .5s ease;
+  border-radius: 999px;
+}
+.wb-hp-num {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: #d4d4d8;
+}
+.wb-atk {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+.wb-enemy-sprite {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  min-width: 100px;
+}
+.wb-player-sprite {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  min-width: 100px;
+  transform: scaleX(-1);
+}
+
+.wb-msg {
+  background: rgba(8, 14, 28, 0.7);
+  border: 1px solid rgba(96,165,250,0.20);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: #facc15;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  min-height: 56px;
+}
+
+.wb-section-label {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: #9ca3af;
+  letter-spacing: 1.5px;
+  font-weight: 600;
+  padding: 0 2px;
+}
+
+.wb-moves {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.wb-move-btn {
+  background: rgba(8, 14, 28, 0.7);
+  border: 1px solid #60a5fa;
+  border-radius: 8px;
+  padding: 10px 12px;
+  text-align: left;
+  cursor: pointer;
+  color: #fff;
+  transition: all .2s ease;
+}
+.wb-move-btn:hover:not(:disabled) {
+  background: rgba(96,165,250,0.14);
+  box-shadow: 0 0 14px rgba(96,165,250,0.30);
+}
+.wb-move-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.wb-move-name {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 13px;
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+.wb-move-pwr {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  color: #9ca3af;
+  margin-top: 2px;
+  letter-spacing: 0.4px;
+}
+
+.wb-bottom-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
+.wb-bottom-btn {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 8px;
+  padding: 12px 8px;
+  color: #e5e7eb;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s ease;
+}
+.wb-bottom-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.20);
+}
+.wb-bottom-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.wb-potion-btn { width: 100%; }

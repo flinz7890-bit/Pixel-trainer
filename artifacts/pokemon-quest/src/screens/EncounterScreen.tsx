@@ -1,16 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useGame, speciesOf, makePokemon, BattleState, OwnedPokemon } from "@/game/state";
 import { LOCATIONS, SPECIES } from "@/game/data";
 import Toast from "@/components/Toast";
-import { TypeBadges, typeColor } from "@/components/TypeBadge";
+import { typeColor } from "@/components/TypeBadge";
 
-const RARITY_STYLES: Record<string, { color: string; label: string }> = {
-  common: { color: "#a1a1aa", label: "COMMON" },
-  uncommon: { color: "#4ade80", label: "UNCOMMON" },
-  rare: { color: "#60a5fa", label: "RARE" },
-  epic: { color: "#a855f7", label: "EPIC" },
-  legendary: { color: "#facc15", label: "LEGENDARY" },
-};
+const HUNTS_PER_LEGENDARY = 32;
 
 function pickEncounter(locId: string) {
   const loc = LOCATIONS.find((l) => l.id === locId)!;
@@ -33,6 +27,12 @@ export default function EncounterScreen() {
   const [shake, setShake] = useState(false);
   const pushLog = (line: string) => dispatch({ type: "LOG", lines: [line] });
 
+  // Increment hunt counter once per encounter
+  useEffect(() => {
+    if (enemy) dispatch({ type: "INC_HUNT" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enemy?.uid]);
+
   if (!enemy) {
     return (
       <div className="pq-fade py-6 text-center">
@@ -46,15 +46,15 @@ export default function EncounterScreen() {
   const sp = speciesOf(enemy);
   const loc = LOCATIONS.find((l) => l.id === state.locationId)!;
   const tColor = typeColor(sp.type[0]);
-  const rar = RARITY_STYLES[sp.rarity] || RARITY_STYLES.common;
 
-  const goBack = () => {
-    pushLog("Got away safely!");
-    setTimeout(() => {
-      dispatch({ type: "SET_BATTLE", battle: null });
-      dispatch({ type: "SET_SCREEN", screen: "adventure" });
-    }, 250);
-  };
+  // Derive level range across all encounters in this location (fallback to enemy level)
+  const lvls = loc.encounters.length
+    ? loc.encounters.flatMap((e) => [e.minLevel, e.maxLevel])
+    : [enemy.level];
+  const lvMin = Math.min(...lvls);
+  const lvMax = Math.max(...lvls);
+
+  const huntsCur = ((state.wildEncounters - 1) % HUNTS_PER_LEGENDARY) + 1;
 
   const exploreAgain = () => {
     const active = state.team[0];
@@ -92,97 +92,54 @@ export default function EncounterScreen() {
     <div className="pq-fade flex flex-col gap-3 py-3 select-none">
       <Toast />
 
-      <div className="pq-card p-4" style={{ boxShadow: `0 12px 30px rgba(0,0,0,0.45), 0 0 26px ${tColor}33` }}>
-        <div className="flex items-center justify-between mb-3">
-          <div
-            className="text-[10px] font-mono-pq tracking-[.3em] uppercase"
-            style={{ color: "#4ade80" }}
-          >
-            ▶ Wild Encounter
-          </div>
-          <div className="text-[11px] font-mono-pq" style={{ color: "#a1a1aa" }}>
-            {loc.emoji} {loc.name}
-          </div>
+      {/* Region header */}
+      <div className="text-center">
+        <div className="enc-region">
+          <span className="enc-dot" />
+          <span className="enc-region-name">{loc.name}</span>
+          <span className="enc-region-sep">•</span>
+          <span className="enc-region-lv">Lv {lvMin}–{lvMax}</span>
         </div>
-
-        {/* Centered glowing sprite */}
-        <div className="grid place-items-center mb-3">
-          <div
-            className={`relative ${shake ? "pq-shake" : "pq-pop"}`}
-            style={{ width: 160, height: 160 }}
-          >
-            <div
-              className="absolute inset-0 rounded-full"
-              style={{
-                background: `radial-gradient(closest-side, ${tColor}66, transparent 72%)`,
-                filter: "blur(2px)",
-              }}
-            />
-            <div
-              className="absolute inset-3 rounded-full grid place-items-center"
-              style={{
-                background: `linear-gradient(180deg, ${tColor}33, rgba(0,0,0,0.30))`,
-                border: `2px solid ${tColor}`,
-                boxShadow: `inset 0 0 0 2px rgba(255,255,255,0.08), 0 0 32px ${tColor}66`,
-              }}
-            >
-              <span style={{ fontSize: 88, lineHeight: 1, filter: "drop-shadow(0 4px 0 rgba(0,0,0,0.30))" }}>
-                {sp.sprite}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Name + level + type */}
-        <div className="text-center">
-          <div className="font-pixel text-[15px] inline-flex items-center gap-2 justify-center">
-            <span style={{ color: "#fff" }}>{sp.name.toUpperCase()}</span>
-            <span style={{ color: enemy.gender === "M" ? "#60a5fa" : "#f472b6" }}>
-              {enemy.gender === "M" ? "♂" : "♀"}
-            </span>
-            <span
-              className="font-mono-pq text-[11px] px-2 py-0.5 rounded-full"
-              style={{ background: "rgba(255,255,255,0.06)", color: "#d4d4d8" }}
-            >
-              LV {enemy.level}
-            </span>
-          </div>
-          <div className="mt-2 flex justify-center"><TypeBadges types={sp.type} /></div>
-        </div>
-
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-2 mt-4">
-          <div className="pq-card-2 px-2 py-2 text-center">
-            <div className="text-[9px] font-mono-pq uppercase" style={{ color: "#71717a" }}>Catch %</div>
-            <div className="font-mono-pq font-bold text-[15px]" style={{ color: "#4ade80" }}>
-              {Math.round(sp.catchRate * 100)}%
-            </div>
-          </div>
-          <div className="pq-card-2 px-2 py-2 text-center">
-            <div className="text-[9px] font-mono-pq uppercase" style={{ color: "#71717a" }}>Balls</div>
-            <div className="font-mono-pq font-bold text-[15px]" style={{ color: "#fff" }}>
-              {state.pokeballs}
-            </div>
-          </div>
-          <div className="pq-card-2 px-2 py-2 text-center">
-            <div className="text-[9px] font-mono-pq uppercase" style={{ color: "#71717a" }}>Rarity</div>
-            <div className="font-mono-pq font-bold text-[12px] mt-0.5" style={{ color: rar.color }}>
-              {rar.label}
-            </div>
-          </div>
+        <div className="enc-hunts">
+          Hunts: {huntsCur}/{HUNTS_PER_LEGENDARY} until legendary
         </div>
       </div>
 
-      {/* Stacked actions */}
-      <div className="flex flex-col gap-2">
-        <button className="pq-btn pq-btn-rose" onClick={startBattle}>
-          ⚪ CAPTURE
+      {/* Scene panel */}
+      <div className="enc-scene" style={{ boxShadow: `0 12px 30px rgba(0,0,0,0.55), 0 0 30px ${tColor}22` }}>
+        <div className="enc-scene-stripes" />
+        <div className="enc-scene-floor" />
+        <div className={`enc-sprite ${shake ? "pq-shake" : "pq-bob"}`}>
+          <span style={{ fontSize: 132, lineHeight: 1, filter: "drop-shadow(0 6px 0 rgba(0,0,0,0.45))" }}>
+            {sp.sprite}
+          </span>
+        </div>
+      </div>
+
+      {/* Caption */}
+      <div className="enc-caption">
+        <span className="enc-caption-text">A wild </span>
+        <span className="enc-caption-name">{sp.name}</span>
+        <span className="enc-caption-lv">Lv. {enemy.level}</span>
+        <span className="enc-caption-text"> has appeared!</span>
+      </div>
+
+      {/* Action buttons */}
+      <div className="enc-actions">
+        <button className="enc-action-btn" onClick={exploreAgain} aria-label="Hunt again">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M8 5c-1.1 0-2 .9-2 2 0 1.1.9 2 2 2s2-.9 2-2c0-1.1-.9-2-2-2z" />
+            <path d="M16 5c-1.1 0-2 .9-2 2 0 1.1.9 2 2 2s2-.9 2-2c0-1.1-.9-2-2-2z" />
+            <path d="M7 14c-1.1 0-2 .9-2 2 0 1.1.9 2 2 2s2-.9 2-2c0-1.1-.9-2-2-2z" />
+            <path d="M17 14c-1.1 0-2 .9-2 2 0 1.1.9 2 2 2s2-.9 2-2c0-1.1-.9-2-2-2z" />
+          </svg>
+          <span>HUNT</span>
         </button>
-        <button className="pq-btn pq-btn-amber" onClick={exploreAgain}>
-          🔄 EXPLORE AGAIN
-        </button>
-        <button className="pq-btn pq-btn-violet" onClick={goBack}>
-          🏃 RUN
+        <button className="enc-action-btn" onClick={startBattle} aria-label="Battle">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M13 2L4.5 13.5h6L9 22l9.5-12h-6L13 2z" />
+          </svg>
+          <span>BATTLE</span>
         </button>
       </div>
     </div>
