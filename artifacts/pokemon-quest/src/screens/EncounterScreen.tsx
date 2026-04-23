@@ -1,3 +1,4 @@
+import PokeSprite from "@/components/PokeSprite";
 import { useEffect, useState } from "react";
 import { useGame, speciesOf, makePokemon, BattleState, OwnedPokemon } from "@/game/state";
 import { LOCATIONS, SPECIES } from "@/game/data";
@@ -110,9 +111,7 @@ export default function EncounterScreen() {
         <div className="enc-scene-stripes" />
         <div className="enc-scene-floor" />
         <div className={`enc-sprite ${shake ? "pq-shake" : "pq-bob"}`}>
-          <span style={{ fontSize: 132, lineHeight: 1, filter: "drop-shadow(0 6px 0 rgba(0,0,0,0.45))" }}>
-            {sp.sprite}
-          </span>
+          <PokeSprite species={sp} size={180} />
         </div>
       </div>
 

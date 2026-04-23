@@ -1,3 +1,4 @@
+import PokeSprite from "@/components/PokeSprite";
 import { useEffect, useState } from "react";
 import { useGame, speciesOf, OwnedPokemon, makePokemon } from "@/game/state";
 import { Move, SPECIES, GYMS, LOCATIONS, PokeType } from "@/game/data";
@@ -299,27 +300,14 @@ export default function BattleScreen() {
             <HpBar p={enemy} big />
           </div>
           <div className={`wb-enemy-sprite ${enemyShake ? "pq-shake" : ""}`}>
-            <span style={{
-              fontSize: 92,
-              lineHeight: 1,
-              color: typeColor(enemySp.type[0]),
-              filter: "drop-shadow(0 5px 0 rgba(0,0,0,0.45))",
-            }}>
-              {enemySp.sprite}
-            </span>
+            <PokeSprite species={enemySp} size={110} />
           </div>
         </div>
 
         {/* Player row: sprite left, stat box right */}
         <div className="wb-player-row">
           <div className={`wb-player-sprite ${playerShake ? "pq-shake" : "pq-bob"}`}>
-            <span style={{
-              fontSize: 96,
-              lineHeight: 1,
-              filter: "drop-shadow(0 5px 0 rgba(0,0,0,0.45))",
-            }}>
-              {playerSp.sprite}
-            </span>
+            <PokeSprite species={playerSp} size={120} back />
           </div>
           <div className="wb-statcard">
             <div className="wb-statcard-row">
@@ -423,9 +411,9 @@ export default function BattleScreen() {
                     await enemyTurn();
                   }}
                 >
-                  <div className="wb-move-name">
-                    <span style={{ marginRight: 6 }}>{sp.sprite}</span>
-                    {sp.name}
+                  <div className="wb-move-name flex items-center gap-2">
+                    <PokeSprite species={sp} size={28} />
+                    <span>{sp.name}</span>
                   </div>
                   <div className="wb-move-pwr">
                     Lv{p.level} · {p.hp}/{p.maxHp}{fainted ? " (KO)" : ""}{isActive ? " (active)" : ""}

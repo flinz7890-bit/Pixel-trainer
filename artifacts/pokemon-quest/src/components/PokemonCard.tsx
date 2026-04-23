@@ -1,3 +1,4 @@
+import PokeSprite from "@/components/PokeSprite";
 import { OwnedPokemon, speciesOf, xpToNext } from "@/game/state";
 import TypeBadge, { TypeBadges, typeColor } from "@/components/TypeBadge";
 
@@ -64,9 +65,7 @@ export default function PokemonCard({ p, showXp = true, active = false, compact 
             boxShadow: `inset 0 0 0 1px rgba(255,255,255,0.05), 0 0 14px ${tColor}33`,
           }}
         >
-          <span style={{ fontSize: 36, lineHeight: 1, filter: "drop-shadow(0 2px 0 rgba(0,0,0,0.30))" }}>
-            {sp.sprite}
-          </span>
+          <PokeSprite species={sp} size={56} />
         </div>
 
         <div className="font-pixel text-[11px] mt-1.5 truncate flex items-center gap-1">
@@ -117,7 +116,7 @@ export default function PokemonCard({ p, showXp = true, active = false, compact 
             boxShadow: `inset 0 0 0 1px rgba(255,255,255,0.06), 0 0 18px ${tColor}33`,
           }}
         >
-          <span style={{ filter: `drop-shadow(0 2px 0 rgba(0,0,0,0.30))` }}>{sp.sprite}</span>
+          <PokeSprite species={sp} size={60} />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline justify-between gap-2">

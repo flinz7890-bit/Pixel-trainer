@@ -1,3 +1,4 @@
+import PokeSprite from "@/components/PokeSprite";
 import { useState } from "react";
 import { useGame } from "@/game/state";
 import { SPECIES, STARTERS } from "@/game/data";
@@ -41,7 +42,7 @@ export default function StarterScreen() {
             border: `3px solid ${sp.color}`,
           }}
         >
-          <span style={{ fontSize: 96 }}>{sp.sprite}</span>
+          <PokeSprite species={sp} size={120} />
         </div>
         <div className="font-pixel text-base text-green-300">{sp.name.toUpperCase()} joined your team!</div>
         <div className="pq-card p-4 max-w-sm w-full text-left text-sm text-slate-100/90 font-gba" style={{ fontSize: 17, lineHeight: 1.25 }}>
@@ -83,7 +84,7 @@ export default function StarterScreen() {
                 background: sel ? sp.color + "22" : undefined,
               }}
             >
-              <div className="text-5xl">{sp.sprite}</div>
+              <PokeSprite species={sp} size={80} />
               <div className="font-bold text-slate-100">{sp.name}</div>
               <div className="text-[11px] text-slate-300/80">{sp.type.join(" / ")}</div>
             </button>

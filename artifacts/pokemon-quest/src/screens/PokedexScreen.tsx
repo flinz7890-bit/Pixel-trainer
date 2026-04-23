@@ -1,3 +1,4 @@
+import PokeSprite from "@/components/PokeSprite";
 import { useGame } from "@/game/state";
 import { SPECIES } from "@/game/data";
 
@@ -28,8 +29,10 @@ export default function PokedexScreen() {
               className="pq-card p-2 flex flex-col items-center gap-1"
               style={{ borderColor: caught ? sp.color : undefined, borderWidth: caught ? 2 : 1 }}
             >
-              <div className="text-3xl" style={{ filter: seen ? "none" : "grayscale(1) brightness(0.4)" }}>
-                {seen ? sp.sprite : "❓"}
+              <div style={{ filter: seen ? "none" : "grayscale(1) brightness(0.4)" }}>
+                {seen
+                  ? <PokeSprite species={sp} size={56} />
+                  : <span style={{ fontSize: 30 }}>❓</span>}
               </div>
               <div className="text-xs font-bold">
                 #{String(sp.id).padStart(3, "0")} {seen ? sp.name : "???"}
