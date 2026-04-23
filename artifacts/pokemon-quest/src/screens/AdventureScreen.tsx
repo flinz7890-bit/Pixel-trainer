@@ -51,7 +51,9 @@ export default function AdventureScreen() {
   const totalCaught = Object.values(state.pokedex).filter((e) => e.caught).length;
   const progress = state.routeProgress[loc.id] || { trainersDefeated: [], explored: false, cleared: false };
   const trainers = loc.trainers || [];
-  const remainingTrainers = trainers.filter((t) => !progress.trainersDefeated.includes(t.id));
+  const remainingTrainers = trainers
+    .filter((t) => !progress.trainersDefeated.includes(t.id))
+    .filter((t) => !t.requiresPrevTrainerId || progress.trainersDefeated.includes(t.requiresPrevTrainerId));
   const cleared = isLocationCleared(loc.id, state.routeProgress);
   const nextLoc = loc.nextLocationId ? LOCATIONS.find((l) => l.id === loc.nextLocationId) : undefined;
   const prevLoc = loc.prevLocationId ? LOCATIONS.find((l) => l.id === loc.prevLocationId) : undefined;
@@ -136,8 +138,12 @@ export default function AdventureScreen() {
   };
 
   const travelTo = (id: string) => {
-    dispatch({ type: "SET_LOCATION", id });
     const next = LOCATIONS.find((l) => l.id === id)!;
+    if (next.requiresBadges && state.badges.length < next.requiresBadges) {
+      dispatch({ type: "TOAST", text: `Need ${next.requiresBadges} badges (have ${state.badges.length}).` });
+      return;
+    }
+    dispatch({ type: "SET_LOCATION", id });
     dispatch({ type: "LOG", lines: [`You traveled to ${next.name}.`] });
   };
 
@@ -319,16 +325,25 @@ export default function AdventureScreen() {
               ← Back to {prevLoc.name}
             </button>
           )}
-          {nextLoc && (
-            <button
-              className="pq-btn pq-btn-primary"
-              onClick={() => travelTo(nextLoc.id)}
-              disabled={!inTown && !cleared}
-              title={!inTown && !cleared ? "Defeat all trainers and explore the route first" : undefined}
-            >
-              {inTown ? `▶ Travel to ${nextLoc.name}` : cleared ? `▶ Continue to ${nextLoc.name}` : `🔒 ${nextLoc.name} (clear route first)`}
-            </button>
-          )}
+          {nextLoc && (() => {
+            const needBadges = nextLoc.requiresBadges || 0;
+            const badgeOk = state.badges.length >= needBadges;
+            const locked = (!inTown && !cleared) || !badgeOk;
+            const label =
+              !badgeOk ? `🔒 ${nextLoc.name} (${needBadges} badges required)` :
+              (!inTown && !cleared) ? `🔒 ${nextLoc.name} (clear route first)` :
+              inTown ? `▶ Travel to ${nextLoc.name}` : `▶ Continue to ${nextLoc.name}`;
+            return (
+              <button
+                className="pq-btn pq-btn-primary"
+                onClick={() => travelTo(nextLoc.id)}
+                disabled={locked}
+                title={locked ? "Locked" : undefined}
+              >
+                {label}
+              </button>
+            );
+          })()}
           {!nextLoc && (
             <div
               className="text-[11px] text-center font-mono-pq"

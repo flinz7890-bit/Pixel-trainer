@@ -93,6 +93,19 @@ export default function EncounterScreen() {
     <div className="pq-fade flex flex-col gap-3 py-3 select-none">
       <Toast />
 
+      {/* Back to adventure */}
+      <div className="flex">
+        <button
+          className="pq-btn pq-btn-ghost px-3 py-1.5 text-[12px]"
+          onClick={() => {
+            dispatch({ type: "SET_BATTLE", battle: null });
+            dispatch({ type: "SET_SCREEN", screen: "adventure" });
+          }}
+        >
+          ← Back
+        </button>
+      </div>
+
       {/* Region header */}
       <div className="text-center">
         <div className="enc-region">

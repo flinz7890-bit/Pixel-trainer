@@ -12,6 +12,10 @@ export const TYPE_COLORS: Record<PokeType, string> = {
   Rock: "#b8a038",
   Ghost: "#705898",
   Psychic: "#f85888",
+  Ice: "#98d8d8",
+  Fighting: "#c03028",
+  Ground: "#e0c068",
+  Dragon: "#7038f8",
 };
 
 export function typeColor(t: PokeType) {

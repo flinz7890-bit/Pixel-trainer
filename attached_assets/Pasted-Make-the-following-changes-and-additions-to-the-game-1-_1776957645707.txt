@@ -1,0 +1,143 @@
+Make the following changes and additions to the game:
+1. BACK BUTTON IN HUNT SCREEN
+Add a clearly visible "← Back" button at the top left of the Hunt/Explore screen
+It should return the player to the main hub/home screen
+Style it consistently with the dark theme
+2. POKÉMON SPRITES
+Replace all Pokémon sprites/emojis with animated GIF sprites using this URL pattern:
+Front sprite (for wild encounters and enemy in battle):
+https://play.pokemonshowdown.com/sprites/ani/{pokemon-name}.gif
+Back sprite (for player's Pokémon in battle):
+https://play.pokemonshowdown.com/sprites/ani-back/{pokemon-name}.gif
+Convert Pokémon name to lowercase, replace spaces with hyphens (e.g. "Mr. Mime" → "mr-mime"). If GIF fails to load, fall back to:
+https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/{pokemon-id}.png
+Apply sprites everywhere — team cards, battle screen, wild encounter, Pokédex, trainer card team display.
+3. FULL KANTO STORY — FIRE RED STYLE
+Implement the complete Kanto region progression in order:
+Towns and Cities (in order):
+Pallet Town → Route 1 → Viridian City → Route 2 → Pewter City → Route 3 → Route 4 → Cerulean City → Route 5 → Route 6 → Vermilion City → Route 7 → Route 8 → Lavender Town → Route 9 → Route 10 → Celadon City → Route 11 → Route 12 → Route 13 → Route 14 → Route 15 → Fuchsia City → Route 16 → Route 17 → Route 18 → Route 19 → Route 20 → Cinnabar Island → Route 21 → Pallet Town → Route 22 → Viridian City → Route 23 → Route 24 → Route 25 → Cerulean City
+8 Gyms in order:
+#
+City
+Leader
+Type
+Badge
+Reward
+1
+Pewter City
+Brock
+Rock
+Boulder Badge
++Attack
+2
+Cerulean City
+Misty
+Water
+Cascade Badge
++Speed
+3
+Vermilion City
+Lt. Surge
+Electric
+Thunder Badge
++Defense
+4
+Celadon City
+Erika
+Grass
+Rainbow Badge
++Sp.Atk
+5
+Fuchsia City
+Koga
+Poison
+Soul Badge
++Sp.Def
+6
+Saffron City
+Sabrina
+Psychic
+Marsh Badge
++Sp.Atk
+7
+Cinnabar Island
+Blaine
+Fire
+Volcano Badge
++Speed
+8
+Viridian City
+Giovanni
+Ground
+Earth Badge
++All Stats
+Each gym leader should have a team of 2-4 Pokémon matching their type, scaled to appropriate levels:
+Brock: Geodude Lv12, Onix Lv14
+Misty: Staryu Lv18, Starmie Lv21
+Lt. Surge: Voltorb Lv21, Pikachu Lv18, Raichu Lv24
+Erika: Victreebel Lv29, Tangela Lv24, Vileplume Lv29
+Koga: Koffing Lv37, Muk Lv39, Koffing Lv37, Weezing Lv43
+Sabrina: Kadabra Lv38, Mr. Mime Lv37, Venomoth Lv38, Alakazam Lv43
+Blaine: Growlithe Lv42, Ponyta Lv40, Rapidash Lv42, Arcanine Lv47
+Giovanni: Rhyhorn Lv45, Dugtrio Lv42, Nidoqueen Lv44, Nidoking Lv45, Rhydon Lv50
+Each city should have a Pokémon Center to heal
+Each gym should only unlock after arriving at that city
+Show a badge collection screen — display earned badges as colored icons
+After defeating a gym leader, award the badge and a prize (TM or money)
+Show a victory message with the gym leader's quote after winning
+Trainer battles on routes:
+Each route should have 1-3 trainer battles before you can fully pass
+Trainers have level-appropriate Pokémon matching the route's area
+Defeated trainers give money reward
+Already-defeated trainers should not battle again
+Wild Pokémon per route — use accurate Fire Red Pokémon locations:
+Route 1: Pidgey, Rattata
+Route 2: Pidgey, Rattata, Caterpie, Weedle
+Route 3: Spearow, Jigglypuff, Mankey
+Route 4: Spearow, Ekans/Sandshrew, Magikarp (fishing)
+Route 5-8: Meowth, Mankey, Abra, Pidgey
+Route 9-10: Voltorb, Magnemite, Doduo
+Route 11-15: Ekans, Drowzee, Ditto
+Route 16-18: Doduo, Rattata, Fearow
+Route 19-20: Tentacool, Tentacruel (surfing)
+Cinnabar: Ponyta, Growlithe, Vulpix
+4. INDIGO PLATEAU — ELITE FOUR + CHAMPION
+Unlock after collecting all 8 badges:
+Trainer
+Type
+Ace Pokémon
+Lorelei
+Ice
+Lapras Lv54
+Bruno
+Fighting
+Machamp Lv58
+Agatha
+Ghost
+Gengar Lv58
+Lance
+Dragon
+Dragonite Lv62
+Champion Blue
+Mixed
+Blastoise/Charizard/Venusaur Lv65
+Must beat all 4 Elite Four members in a row before facing Champion
+If you lose midway, you restart from Lorelei
+Winning shows a Hall of Fame screen with all your Pokémon
+After becoming Champion, unlock a "Post Game" mode
+5. GENERAL IMPROVEMENTS
+Auto-save all progress to localStorage so nothing is lost on refresh
+Pokémon fainting — when HP hits 0, show a faint animation and message "{Pokémon} fainted!"
+Level up system — when EXP is full, show "{Pokémon} grew to Level X!" with a flash animation
+Evolution system — Pokémon evolve at correct levels (e.g. Caterpie→Metapod at Lv7, Charmander→Charmeleon at Lv16). Show evolution animation screen with "Your CATERPIE is evolving!" message
+Move learning — when leveling up, if a Pokémon learns a new move show "CHARMANDER wants to learn Ember! Replace a move?" with 4 current moves to choose from
+Type effectiveness — implement super effective (2x), not very effective (0.5x), and immune (0x) damage with messages like "It's super effective!"
+Status effects — add Poison, Sleep, Paralysis, Burn, Freeze with icons on Pokémon cards
+Flee from wild battles — Run button should have a small chance to fail based on speed difference
+Money system — earn money from trainer battles, spend at Poké Mart in each city
+Pokémart items — Poké Balls, Potions, Super Potions, Antidotes, Awakening, Paralyze Heal
+HP color change — HP bar turns yellow below 50%, red below 20%
+Smooth battle transitions — slide-in animation when entering battle
+Victory/defeat music visual — show a win or loss banner after each battle
+Pokédex entries — each Pokémon in Pokédex shows sprite, type, basic stats, and a short description
+Responsive mobile layout — ensure everything is touch-friendly with large tap targets

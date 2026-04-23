@@ -1,31 +1,36 @@
 import { useState } from "react";
 import { Species } from "@/game/data";
 
-export function spriteUrl(speciesId: number, variant: "pixel" | "art" = "pixel") {
-  if (variant === "art") {
-    return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${speciesId}.png`;
-  }
-  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${speciesId}.png`;
+// Showdown uses lowercase + alphanumerics only (e.g. "Mr. Mime" -> "mrmime")
+function showdownName(name: string) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "");
 }
 
-export function backSpriteUrl(speciesId: number) {
-  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${speciesId}.png`;
+export function showdownAniUrl(name: string, back = false) {
+  const folder = back ? "ani-back" : "ani";
+  return `https://play.pokemonshowdown.com/sprites/${folder}/${showdownName(name)}.gif`;
+}
+
+export function pokeapiPngUrl(speciesId: number, back = false) {
+  if (back) {
+    return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${speciesId}.png`;
+  }
+  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${speciesId}.png`;
 }
 
 interface Props {
   species: Species;
   size?: number;
-  variant?: "pixel" | "art";
   back?: boolean;
   className?: string;
   style?: React.CSSProperties;
 }
 
-export default function PokeSprite({ species, size = 96, variant = "pixel", back = false, className, style }: Props) {
-  const [errored, setErrored] = useState(false);
-  const url = back ? backSpriteUrl(species.id) : spriteUrl(species.id, variant);
+export default function PokeSprite({ species, size = 96, back = false, className, style }: Props) {
+  // 0 = animated GIF (Showdown), 1 = PokeAPI PNG, 2 = emoji
+  const [stage, setStage] = useState(0);
 
-  if (errored) {
+  if (stage >= 2) {
     return (
       <span
         className={className}
@@ -36,19 +41,22 @@ export default function PokeSprite({ species, size = 96, variant = "pixel", back
     );
   }
 
+  const url = stage === 0 ? showdownAniUrl(species.name, back) : pokeapiPngUrl(species.id, back);
+  const pixelated = stage === 1;
+
   return (
     <img
       src={url}
       alt={species.name}
       width={size}
       height={size}
-      onError={() => setErrored(true)}
+      onError={() => setStage((s) => s + 1)}
       className={className}
       style={{
         width: size,
         height: size,
         objectFit: "contain",
-        imageRendering: variant === "pixel" ? "pixelated" : "auto",
+        imageRendering: pixelated ? "pixelated" : "auto",
         filter: "drop-shadow(0 4px 0 rgba(0,0,0,0.35))",
         userSelect: "none",
         ...style,

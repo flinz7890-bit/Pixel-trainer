@@ -1,16 +1,18 @@
 import PokeSprite from "@/components/PokeSprite";
 import { useEffect, useState } from "react";
 import { useGame, speciesOf, OwnedPokemon, makePokemon } from "@/game/state";
-import { Move, SPECIES, GYMS, LOCATIONS, PokeType } from "@/game/data";
+import { Move, SPECIES, GYMS, LOCATIONS, PokeType, effectiveness, effectivenessLabel } from "@/game/data";
 import Toast from "@/components/Toast";
 import { typeColor } from "@/components/TypeBadge";
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-function calcDamage(attacker: OwnedPokemon, move: Move) {
+function calcDamage(attacker: OwnedPokemon, move: Move, defenderTypes: PokeType[]) {
   const base = move.power + attacker.atk;
   const variance = 0.85 + Math.random() * 0.3;
-  return Math.max(1, Math.floor(base * variance * 0.6));
+  const mult = effectiveness(move.type, defenderTypes);
+  const raw = base * variance * 0.6 * mult;
+  return { dmg: mult === 0 ? 0 : Math.max(1, Math.floor(raw)), mult };
 }
 
 function HpBar({ p, big }: { p: OwnedPokemon; big?: boolean }) {
@@ -104,14 +106,15 @@ export default function BattleScreen() {
     setBusy(true);
     await sleep(700);
     const move = enemySp.moves[Math.floor(Math.random() * enemySp.moves.length)];
-    const dmg = calcDamage(enemy, move);
+    const { dmg, mult } = calcDamage(enemy, move, playerSp.type);
     log([`Foe ${enemySp.name} used ${move.name}!`]);
     setPlayerShake(true);
     setTimeout(() => setPlayerShake(false), 500);
     await sleep(350);
     const newHp = Math.max(0, player.hp - dmg);
     dispatch({ type: "PATCH_PLAYER_ACTIVE", patch: { hp: newHp } });
-    log([`It dealt ${dmg} damage!`]);
+    const effMsg = effectivenessLabel(mult);
+    log([`It dealt ${dmg} damage!`, ...(effMsg ? [effMsg] : [])]);
     await sleep(550);
     if (newHp <= 0) {
       log([`${playerSp.name} fainted!`]);
@@ -170,10 +173,11 @@ export default function BattleScreen() {
     setEnemyShake(true);
     setTimeout(() => setEnemyShake(false), 500);
     await sleep(350);
-    const dmg = calcDamage(player, move);
+    const { dmg, mult } = calcDamage(player, move, enemySp.type);
     const newEnemyHp = Math.max(0, enemy.hp - dmg);
     dispatch({ type: "PATCH_BATTLE", patch: { enemy: { ...enemy, hp: newEnemyHp } } });
-    log([`It dealt ${dmg} damage!`]);
+    const effMsg = effectivenessLabel(mult);
+    log([`It dealt ${dmg} damage!`, ...(effMsg ? [effMsg] : [])]);
     await sleep(550);
     if (newEnemyHp <= 0) {
       log([`Foe ${enemySp.name} fainted!`]);
