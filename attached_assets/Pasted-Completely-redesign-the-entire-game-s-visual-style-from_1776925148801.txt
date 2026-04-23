@@ -1,0 +1,48 @@
+Completely redesign the entire game's visual style from scratch. Every screen, component, and UI element should be rebuilt to match a premium, modern dark Pokémon RPG aesthetic. Here is exactly what I want:
+GLOBAL DESIGN SYSTEM
+Background: deep dark #0a0a0f with a very subtle noise or grid texture
+All cards/panels: #12121a background, 1px solid #2a2a3a border, border-radius: 20px, soft box-shadow with a faint colored glow matching the content type
+Typography: "Press Start 2P" (Google Font) for titles and Pokémon names, "Inter" or "DM Sans" for body/stats
+Color palette:
+Green: #4ade80 — explore, hunt, active states, HP bars
+Purple: #a855f7 — Pokédex, DEX button
+Pink/Red: #f43f5e — Card, danger, enemy HP
+Cyan: #22d3ee — region, info
+Orange: #fb923c — bag, store, fight button
+Yellow/Gold: #facc15 — badges, rewards
+Blue: #60a5fa — run, water types
+All buttons: dark background #1a1a2e, colored left border (4px) or colored icon matching the category, bold uppercase label, rounded corners 16px, hover/active glow effect
+HP bars: tall rounded bars, green filled, dark gray empty, smooth transition
+Command log: terminal-style dark card, monospace font, each line prefixed with >, colored by action type (green for success, red for damage, yellow for items)
+TRAINER CARD
+Large dark card with trainer avatar on the left (make avatar placeholder look like a pixel trainer silhouette with a colored glow)
+Stats displayed in a 2x2 grid of mini-cards: PokéDollars, Rank, Items, Missions (or Wins/Losses/EXP/Next Rank)
+EXP progress bar at the bottom of the card, glowing green
+Adventure start date in small gray italic text at the bottom
+Add a faint Pokéball watermark in the background of the trainer card for depth
+MAIN HUB / DASHBOARD
+Header bar: game title "POKÉMON — [GAME NAME]" in pink/red gradient text, region and town in small gray text, Caught counter as a glowing badge top right
+Team section: each Pokémon displayed as a horizontal card with sprite/emoji icon in a colored type-themed box, name + level + type badge + HP bar + EXP bar
+Navigation buttons: 3x3 grid, each button has a unique accent color, large emoji/icon, uppercase label — HUNT (green), TEAMS (orange), CARD (pink), DEX (purple), REGION (cyan), SAFARI (teal), BAG (orange), STORE (yellow), CAUGHT (gold)
+Active Pokémon should have a glowing border matching its type color
+BATTLE SCREEN — Full Rebuild
+Arena panel: wide dark card, background is a layered gradient (deep navy top, dark green grass bottom), animated scanline overlay for retro feel
+Enemy Pokémon: top-right, slightly larger sprite, entrance slide-in animation
+Player Pokémon: bottom-left, sprite with a subtle bounce idle animation
+Enemy stat box: top-left floating card — name, gender, level badge, HP bar (no numbers)
+Player stat box: bottom-right floating card — name, gender, level badge, HP bar with numbers, EXP bar
+Dialog box: below arena, dark card with rounded corners, text like "What will BULBASAUR do?" in pixel font, blinking cursor
+Action menu: 2x2 grid below dialog — FIGHT (orange glow), BAG (yellow glow), MONSTER (green glow), RUN (blue glow) — each with icon and bold label
+When FIGHT is selected, show move list as 4 buttons with type-color coding and PP counter
+Add a turn indicator and smooth fade transitions between turns
+WILD ENCOUNTER SCREEN
+Dark card with Pokémon sprite centered in a glowing type-colored circle
+Name, level, type badge displayed prominently
+Stats row: Catch %, Balls remaining, Rarity badge (color-coded: Common=gray, Rare=blue, Epic=purple, Legendary=gold)
+Three action buttons stacked: CAPTURE (red with Pokéball icon), EXPLORE AGAIN (orange), RUN (pink) — all full width, bold, glowing
+EXTRA POLISH
+Add smooth CSS transitions (300ms ease) on all button interactions
+Add a subtle particle or star effect in the background of the main hub
+Type badges (Water, Fire, Bug, etc.) should be colored pills matching official Pokémon type colors
+All screens should feel connected — same dark theme, same font system, same button style
+Make it fully mobile-responsive and touch-friendly with large tap targets

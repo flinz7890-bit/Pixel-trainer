@@ -1,6 +1,14 @@
 import { useEffect, useRef } from "react";
 import { useGame } from "@/game/state";
 
+function colorClass(line: string) {
+  const l = line.toLowerCase();
+  if (/(damage|fainted|hurt|hit|broke free)/.test(l)) return "dmg";
+  if (/(potion|ball|received|caught|gained|heal|earned)/.test(l)) return "item";
+  if (/(used|won|gotcha|begin|joined|evolved|appeared|safely)/.test(l)) return "ok";
+  return "info";
+}
+
 export default function CommandBox() {
   const { state, dispatch } = useGame();
   const ref = useRef<HTMLDivElement | null>(null);
@@ -11,30 +19,28 @@ export default function CommandBox() {
   }, [lines.length]);
 
   return (
-    <div
-      className="mt-3 rounded-2xl"
-      style={{
-        background: "#14141f",
-        border: "1px solid rgba(74,222,128,0.18)",
-        boxShadow: "0 6px 16px rgba(0,0,0,0.40)",
-      }}
-    >
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-green-400/15">
-        <div className="text-[9px] font-pixel text-green-400/90 tracking-widest">▾ COMMAND LOG</div>
+    <div className="cmd-log mt-3">
+      <div className="flex items-center justify-between mb-1.5">
+        <div
+          className="font-mono-pq text-[10px] tracking-[.18em] uppercase"
+          style={{ color: "#4ade80" }}
+        >
+          ▾ command_log
+        </div>
         <button
-          className="text-[10px] text-zinc-400 hover:text-green-300 font-mono-pq"
+          className="text-[10px] font-mono-pq hover:text-zinc-200 transition"
+          style={{ color: "#71717a" }}
           onClick={() => dispatch({ type: "CLEAR_LOG" })}
         >
           clear
         </button>
       </div>
-      <div ref={ref} className="px-3 py-2 max-h-28 overflow-y-auto font-mono-pq text-[12.5px] leading-relaxed">
-        {lines.length === 0 && (
-          <div className="text-zinc-500 italic">No commands yet…</div>
-        )}
+      <div ref={ref} className="overflow-y-auto" style={{ maxHeight: 110 }}>
+        {lines.length === 0 && <div className="empty">No commands yet…</div>}
         {lines.map((line, i) => (
-          <div key={i} className="text-green-400">
-            <span className="text-green-500 mr-1.5">•</span>{line}
+          <div key={i} className="row">
+            <span className="prefix">&gt;</span>
+            <span className={colorClass(line)}>{line}</span>
           </div>
         ))}
       </div>
