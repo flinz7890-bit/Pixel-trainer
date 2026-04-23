@@ -34,7 +34,7 @@ export default function PokemonCard({ p, showXp = true, active = false }: Props)
             <div className="text-xs text-slate-300/80">Lv. {p.level}</div>
           </div>
           <div className="text-[11px] text-slate-300/80">{sp.type.join(" / ")}</div>
-          {active && <div className="text-[10px] font-pixel text-orange-400 mt-0.5">▶ ACTIVE</div>}
+          {active && <div className="text-[10px] font-pixel text-green-400 mt-0.5">▶ ACTIVE</div>}
         </div>
       </div>
 

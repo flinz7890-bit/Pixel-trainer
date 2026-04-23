@@ -11,11 +11,11 @@ export default function HomeScreen() {
   return (
     <div className="pq-fade flex flex-col items-center gap-8 py-12">
       <div className="text-center">
-        <div className="text-[11px] uppercase tracking-[.4em] text-orange-400/80 mb-2">Main Menu</div>
+        <div className="text-[11px] uppercase tracking-[.4em] text-green-400/80 mb-2">Main Menu</div>
         <div
           className="font-pixel text-2xl"
           style={{
-            background: "linear-gradient(180deg,#FFB07A 0%,#FF7A45 60%,#F26207 100%)",
+            background: "linear-gradient(180deg,#86efac 0%,#4ade80 60%,#16a34a 100%)",
             WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent",
           }}
         >
@@ -50,7 +50,7 @@ export default function HomeScreen() {
       </div>
 
       <button
-        className="text-[11px] text-orange-400/70 underline-offset-2 hover:underline"
+        className="text-[11px] text-green-400/70 underline-offset-2 hover:underline"
         onClick={() => dispatch({ type: "SET_SCREEN", screen: "welcome" })}
       >
         ← back

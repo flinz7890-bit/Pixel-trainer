@@ -11,48 +11,50 @@ function calcDamage(attacker: OwnedPokemon, move: Move) {
   return Math.max(1, Math.floor(base * variance * 0.6));
 }
 
-function HpDisplay({ hp, max }: { hp: number; max: number }) {
-  const pct = Math.max(0, (hp / max) * 100);
-  const cls = pct > 50 ? "" : pct > 20 ? "mid" : "low";
-  return (
-    <div className="gba-hp-track w-full">
-      <div className={`gba-hp-fill ${cls}`} style={{ width: `${pct}%` }} />
-    </div>
-  );
-}
-
 function GenderIcon({ g }: { g: "M" | "F" }) {
   return (
-    <span style={{ color: g === "M" ? "#1d4ed8" : "#be185d", fontWeight: 800 }}>
+    <span style={{ color: g === "M" ? "#60a5fa" : "#f472b6", fontWeight: 800 }}>
       {g === "M" ? "♂" : "♀"}
     </span>
   );
 }
 
-function Banner({
-  p, side, showHpNumbers, showXp,
+function StatBox({
+  p,
+  showHpNumbers,
+  showXp,
 }: {
-  p: OwnedPokemon; side: "left" | "right"; showHpNumbers?: boolean; showXp?: boolean;
+  p: OwnedPokemon;
+  showHpNumbers?: boolean;
+  showXp?: boolean;
 }) {
   const sp = speciesOf(p);
   const pct = Math.max(0, (p.hp / p.maxHp) * 100);
   const cls = pct > 50 ? "" : pct > 20 ? "mid" : "low";
   return (
-    <div className={`gba-banner ${side}`}>
-      <div className="row">
-        <div className="flex items-center gap-1">
-          <span className="name uppercase">{sp.name}</span>
+    <div className="bt-statbox">
+      <div className="flex items-center justify-between gap-2">
+        <div className="name uppercase">
+          <span>{sp.name}</span>
           <GenderIcon g={p.gender} />
         </div>
-        <div className="lvl">:L{p.level}</div>
+        <div className="lvl">Lv {p.level}</div>
       </div>
-      <div className="hp-row">
-        <span className="hp-label">HP</span>
-        <div className="hp-track-thin"><div className={`hp-fill ${cls}`} style={{ width: `${pct}%` }} /></div>
+      <div className="bt-hp-track">
+        <div className={`bt-hp-fill ${cls}`} style={{ width: `${pct}%` }} />
       </div>
-      {showHpNumbers && <div className="hp-num">{p.hp}/{p.maxHp}</div>}
+      {showHpNumbers && (
+        <div className="bt-hp-num">
+          {p.hp}/{p.maxHp}
+        </div>
+      )}
       {showXp && (
-        <div className="xp-track"><div className="xp-fill" style={{ width: `${(p.xp / xpToNext(p.level)) * 100}%` }} /></div>
+        <div className="bt-xp-track">
+          <div
+            className="bt-xp-fill"
+            style={{ width: `${(p.xp / xpToNext(p.level)) * 100}%` }}
+          />
+        </div>
       )}
     </div>
   );
@@ -83,7 +85,8 @@ export default function BattleScreen() {
     dispatch({ type: "ADD_LOG", lines });
     dispatch({ type: "LOG", lines });
   };
-  const setBusy = (busy: boolean) => dispatch({ type: "PATCH_BATTLE", patch: { busy } });
+  const setBusy = (busy: boolean) =>
+    dispatch({ type: "PATCH_BATTLE", patch: { busy } });
 
   const endBattleAfter = async (outcome: "won" | "lost" | "fled" | "caught") => {
     dispatch({ type: "PATCH_BATTLE", patch: { outcome } });
@@ -103,7 +106,10 @@ export default function BattleScreen() {
     if (sp.evolvesAt && sp.evolvesTo && player.level >= sp.evolvesAt) {
       const targetId = sp.evolvesTo;
       const targetName = SPECIES[targetId].name;
-      dispatch({ type: "ADD_LOG", lines: [`What? ${sp.name} is evolving!`, `${sp.name} evolved into ${targetName}!`] });
+      dispatch({
+        type: "ADD_LOG",
+        lines: [`What? ${sp.name} is evolving!`, `${sp.name} evolved into ${targetName}!`],
+      });
       dispatch({ type: "EVOLVE_ACTIVE", toSpeciesId: targetId });
       dispatch({ type: "TOAST", text: `${sp.name} evolved into ${targetName}!` });
     }
@@ -137,7 +143,10 @@ export default function BattleScreen() {
       const rest = battle.enemyTeamRemaining.slice(1);
       const nextEnemy = makePokemon(next.speciesId, next.level);
       log([`${SPECIES[next.speciesId].name} was sent out!`]);
-      dispatch({ type: "PATCH_BATTLE", patch: { enemy: nextEnemy, enemyTeamRemaining: rest, turn: "player", busy: false } });
+      dispatch({
+        type: "PATCH_BATTLE",
+        patch: { enemy: nextEnemy, enemyTeamRemaining: rest, turn: "player", busy: false },
+      });
       return;
     }
     if (battle.isGym && battle.gymId) {
@@ -210,7 +219,10 @@ export default function BattleScreen() {
   const onPotion = async () => {
     if (battle.busy || battle.outcome) return;
     if (state.potions === 0 || player.hp >= player.maxHp) {
-      dispatch({ type: "TOAST", text: state.potions === 0 ? "No Potions!" : "HP is already full." });
+      dispatch({
+        type: "TOAST",
+        text: state.potions === 0 ? "No Potions!" : "HP is already full.",
+      });
       return;
     }
     setMenu("main");
@@ -239,97 +251,191 @@ export default function BattleScreen() {
   };
 
   const dialogText = battle.busy
-    ? (battle.log[battle.log.length - 1] || "")
+    ? battle.log[battle.log.length - 1] || ""
     : `What will ${playerSp.name.toUpperCase()} do?`;
+
+  const battleLines = battle.log.slice(-12);
 
   return (
     <div className="pq-fade flex flex-col gap-3 py-2 select-none">
       <Toast />
 
-      <div className="gba-screen" style={{ aspectRatio: "3 / 2", minHeight: 300 }}>
-        {/* Enemy: banner top-left, sprite top-right with platform */}
-        <div className="absolute left-2 top-2 z-20"><Banner p={enemy} side="left" /></div>
-        <div className="absolute right-3 top-[28%] z-10" style={{ width: 110 }}>
-          <div className="gba-platform-disc" style={{ width: 130, height: 26, left: -10, bottom: -14, position: "absolute" }} />
+      {/* Battle arena */}
+      <div className="bt-arena">
+        {/* Enemy stat box: top-left */}
+        <div className="absolute left-3 top-3 z-20">
+          <StatBox p={enemy} />
+        </div>
+
+        {/* Enemy sprite: top-right */}
+        <div className="absolute right-5 top-[26%] z-10" style={{ width: 130 }}>
+          <div
+            className="bt-platform"
+            style={{ width: 150, height: 28, left: -10, bottom: -16, position: "absolute" }}
+          />
           <div className={`relative ${enemyShake ? "pq-shake" : ""}`}>
-            <span className="gba-sprite-emoji" style={{ fontSize: 72, display: "block", textAlign: "center" }}>{enemySp.sprite}</span>
+            <span
+              className="bt-sprite"
+              style={{ display: "block", textAlign: "center" }}
+            >
+              {enemySp.sprite}
+            </span>
           </div>
         </div>
 
-        {/* Player: sprite bottom-left, banner bottom-right */}
-        <div className="absolute left-3 bottom-[8%] z-10" style={{ width: 130 }}>
-          <div className="gba-platform-disc" style={{ width: 160, height: 30, left: -14, bottom: -16, position: "absolute" }} />
+        {/* Player sprite: bottom-left */}
+        <div className="absolute left-5 bottom-[10%] z-10" style={{ width: 150 }}>
+          <div
+            className="bt-platform"
+            style={{ width: 180, height: 32, left: -15, bottom: -18, position: "absolute" }}
+          />
           <div className={`relative ${playerShake ? "pq-shake" : ""}`}>
-            <span className="gba-sprite-back" style={{ fontSize: 96, display: "block", textAlign: "center" }}>{playerSp.sprite}</span>
+            <span
+              className="bt-sprite-back"
+              style={{ display: "block", textAlign: "center" }}
+            >
+              {playerSp.sprite}
+            </span>
           </div>
         </div>
-        <div className="absolute right-2 bottom-2 z-20"><Banner p={player} side="right" showHpNumbers showXp /></div>
+
+        {/* Player stat box: bottom-right */}
+        <div className="absolute right-3 bottom-3 z-20">
+          <StatBox p={player} showHpNumbers showXp />
+        </div>
       </div>
 
-      {/* Dialog + menu (outside the GBA screen for mobile-friendliness) */}
-      <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
-        <div className="gba-dialog sm:col-span-3 flex items-center">
-          <span>{dialogText}</span>
-        </div>
+      {/* Dialog */}
+      <div className="bt-dialog">
+        <span>{dialogText}</span>
+      </div>
 
-        <div className="sm:col-span-2">
-          {menu === "main" && (
-            <div className="gba-menu-grid">
-              <button className="gba-menu-btn color-fight has-arrow is-selected" disabled={battle.busy || !!battle.outcome} onClick={() => setMenu("fight")}>FIGHT</button>
-              <button className="gba-menu-btn color-bag has-arrow" disabled={battle.busy || !!battle.outcome} onClick={() => setMenu("bag")}>BAG</button>
-              <button className="gba-menu-btn color-mon has-arrow" disabled={battle.busy || !!battle.outcome} onClick={() => setMenu("mon")}>MONSTER</button>
-              <button className="gba-menu-btn color-run has-arrow" disabled={battle.busy || !!battle.outcome || !!battle.isGym} onClick={onRun}>RUN</button>
-            </div>
-          )}
-          {menu === "mon" && (
-            <div className="gba-menu-grid">
-              {state.team.map((p, i) => {
-                const isActive = i === 0;
-                const fainted = p.hp <= 0;
-                return (
-                  <button
-                    key={p.uid}
-                    className={`gba-menu-btn has-arrow ${isActive ? "is-selected" : ""}`}
-                    disabled={battle.busy || isActive || fainted}
-                    onClick={async () => {
-                      if (battle.busy || isActive || fainted) return;
-                      setMenu("main");
-                      setBusy(true);
-                      const outName = speciesOf(state.team[0]).name.toUpperCase();
-                      const inName = speciesOf(p).name.toUpperCase();
-                      log([`${outName}, come back!`, `Go! ${inName}!`]);
-                      dispatch({ type: "SWAP_ACTIVE", withIndex: i });
-                      await sleep(800);
-                      dispatch({ type: "PATCH_BATTLE", patch: { turn: "enemy" } });
-                      await enemyTurn();
-                    }}
-                  >
-                    {isActive ? "▶ " : ""}{speciesOf(p).name.toUpperCase()} L{p.level}
-                    {fainted ? " (KO)" : ""}
-                  </button>
-                );
-              })}
-              <button className="gba-menu-btn has-arrow col-span-2" onClick={() => setMenu("main")}>← BACK</button>
-            </div>
-          )}
-          {menu === "fight" && (
-            <div className="gba-menu-grid">
-              {playerSp.moves.map((m) => (
-                <button key={m.name} className="gba-menu-btn has-arrow" disabled={battle.busy} onClick={() => onFight(m)}>
-                  {m.name.toUpperCase()}
+      {/* Action menu */}
+      <div>
+        {menu === "main" && (
+          <div className="bt-menu-grid">
+            <button
+              className="bt-menu-btn bt-menu-fight"
+              disabled={battle.busy || !!battle.outcome}
+              onClick={() => setMenu("fight")}
+            >
+              Fight
+            </button>
+            <button
+              className="bt-menu-btn bt-menu-bag"
+              disabled={battle.busy || !!battle.outcome}
+              onClick={() => setMenu("bag")}
+            >
+              Bag
+            </button>
+            <button
+              className="bt-menu-btn bt-menu-mon"
+              disabled={battle.busy || !!battle.outcome}
+              onClick={() => setMenu("mon")}
+            >
+              Monster
+            </button>
+            <button
+              className="bt-menu-btn bt-menu-run"
+              disabled={battle.busy || !!battle.outcome || !!battle.isGym}
+              onClick={onRun}
+            >
+              Run
+            </button>
+          </div>
+        )}
+        {menu === "mon" && (
+          <div className="bt-menu-grid">
+            {state.team.map((p, i) => {
+              const isActive = i === 0;
+              const fainted = p.hp <= 0;
+              return (
+                <button
+                  key={p.uid}
+                  className={`bt-menu-btn ${isActive ? "bt-menu-mon" : "bt-menu-back"}`}
+                  disabled={battle.busy || isActive || fainted}
+                  onClick={async () => {
+                    if (battle.busy || isActive || fainted) return;
+                    setMenu("main");
+                    setBusy(true);
+                    const outName = speciesOf(state.team[0]).name.toUpperCase();
+                    const inName = speciesOf(p).name.toUpperCase();
+                    log([`${outName}, come back!`, `Go! ${inName}!`]);
+                    dispatch({ type: "SWAP_ACTIVE", withIndex: i });
+                    await sleep(800);
+                    dispatch({ type: "PATCH_BATTLE", patch: { turn: "enemy" } });
+                    await enemyTurn();
+                  }}
+                >
+                  {isActive ? "▶ " : ""}
+                  {speciesOf(p).name.toUpperCase()} L{p.level}
+                  {fainted ? " (KO)" : ""}
                 </button>
-              ))}
-              <button className="gba-menu-btn has-arrow col-span-2" onClick={() => setMenu("main")}>← BACK</button>
-            </div>
-          )}
-          {menu === "bag" && (
-            <div className="gba-menu-grid">
-              <button className="gba-menu-btn has-arrow" disabled={battle.busy} onClick={onPotion}>POTION ×{state.potions}</button>
-              <button className="gba-menu-btn has-arrow" disabled={battle.busy || !!battle.isGym} onClick={onCatch}>POKÉ BALL ×{state.pokeballs}</button>
-              <button className="gba-menu-btn has-arrow col-span-2" onClick={() => setMenu("main")}>← BACK</button>
-            </div>
-          )}
-        </div>
+              );
+            })}
+            <button
+              className="bt-menu-btn bt-menu-back col-span-2"
+              onClick={() => setMenu("main")}
+            >
+              ← Back
+            </button>
+          </div>
+        )}
+        {menu === "fight" && (
+          <div className="bt-menu-grid">
+            {playerSp.moves.map((m) => (
+              <button
+                key={m.name}
+                className="bt-menu-btn bt-menu-fight"
+                disabled={battle.busy}
+                onClick={() => onFight(m)}
+              >
+                {m.name}
+              </button>
+            ))}
+            <button
+              className="bt-menu-btn bt-menu-back col-span-2"
+              onClick={() => setMenu("main")}
+            >
+              ← Back
+            </button>
+          </div>
+        )}
+        {menu === "bag" && (
+          <div className="bt-menu-grid">
+            <button
+              className="bt-menu-btn bt-menu-bag"
+              disabled={battle.busy}
+              onClick={onPotion}
+            >
+              Potion ×{state.potions}
+            </button>
+            <button
+              className="bt-menu-btn bt-menu-bag"
+              disabled={battle.busy || !!battle.isGym}
+              onClick={onCatch}
+            >
+              Poké Ball ×{state.pokeballs}
+            </button>
+            <button
+              className="bt-menu-btn bt-menu-back col-span-2"
+              onClick={() => setMenu("main")}
+            >
+              ← Back
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Battle command log */}
+      <div className="bt-cmdlog">
+        {battleLines.length === 0 && <div className="empty">Waiting for action...</div>}
+        {battleLines.map((line, i) => (
+          <div key={i} className="row">
+            <span className="bullet">•</span>
+            <span>{line}</span>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -11,10 +11,10 @@ export default function TrainerCardScreen() {
       <Toast />
 
       <div className="pq-card p-3 text-center">
-        <div className="text-[10px] uppercase tracking-[.4em] text-orange-400/80">
+        <div className="text-[10px] uppercase tracking-[.4em] text-green-400/80">
           Following You
         </div>
-        <div className="font-pixel text-base text-orange-300 mt-1">
+        <div className="font-pixel text-base text-green-300 mt-1">
           {(state.trainerName || "TRAINER").toUpperCase()}
         </div>
         <div className="text-[11px] text-slate-400 font-gba mt-0.5">

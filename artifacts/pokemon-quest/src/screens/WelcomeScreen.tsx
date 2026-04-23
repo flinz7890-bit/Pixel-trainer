@@ -5,13 +5,13 @@ export default function WelcomeScreen() {
   return (
     <div className="pq-fade flex flex-col items-center gap-10 py-16">
       <div className="text-center">
-        <div className="text-xs uppercase tracking-[.4em] text-orange-400/80 mb-3">Welcome to</div>
+        <div className="text-xs uppercase tracking-[.4em] text-green-400/80 mb-3">Welcome to</div>
         <div
           className="font-pixel text-3xl sm:text-4xl"
           style={{
-            background: "linear-gradient(180deg,#FFB07A 0%,#FF7A45 50%,#F26207 100%)",
+            background: "linear-gradient(180deg,#86efac 0%,#4ade80 50%,#16a34a 100%)",
             WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent",
-            textShadow: "0 0 24px rgba(242,98,7,0.45)",
+            textShadow: "0 0 24px rgba(74,222,128,0.45)",
           }}
         >
           POKÉMON QUEST
