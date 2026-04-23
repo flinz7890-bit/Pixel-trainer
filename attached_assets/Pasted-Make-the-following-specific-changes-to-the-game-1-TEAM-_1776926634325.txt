@@ -1,0 +1,36 @@
+Make the following specific changes to the game:
+1. TEAM DISPLAY — Horizontal Scrollable Row
+Change the team display on the home screen from a vertical stacked list to a horizontal scrollable row
+Each Pokémon card should be a compact square card (~140px wide) showing: sprite/emoji icon, name, level badge, type pill, and a small HP bar at the bottom
+Cards should scroll left/right with touch swipe on mobile
+The active Pokémon should have a glowing colored border matching its type
+Show team count like "TEAM (3/6)" above the row
+This keeps the home screen compact no matter how many Pokémon you have
+2. TRAINER CARD — Remove Walking Animation
+Remove the walking trainer sprite scene/animation panel from the trainer card completely
+Replace it with a clean static trainer avatar card (pixel art silhouette or chosen sprite) with a colored glow behind it
+Keep all stats (PokéDollars, Wins, Items, Pokédex, Rank, XP bar) — just remove the animated walking scene
+3. TOWN & ROUTE PROGRESSION SYSTEM
+Implement a proper region travel system:
+Starting town: Pallet Town
+Player starts here
+Contains a Pokémon Center (heal all Pokémon for free)
+No wild Pokémon encounters in town
+Has a "Travel to Route 1" button to begin the journey
+Route 1 → Route 2 → Route 3 → Pewter City
+Each route has wild Pokémon encounters (existing explore system)
+Each route also has 1 to 2 trainer battles placed along the path
+Trainer battles trigger automatically or via a "Challenge Trainer" button when you enter a route
+After clearing a route (defeating trainer(s) + exploring), a "Continue to Next Route" button unlocks
+Pewter City is reached after completing all 3 routes — add a simple arrival message and a Pewter City Gym badge reward
+4. DEFEAT / BLACKOUT SYSTEM
+If all your Pokémon faint (HP reaches 0) during a trainer battle or wild encounter midway through a route, trigger a "Blacked Out!" screen
+Show a message like: "You have no Pokémon left to fight... You blacked out!"
+Automatically return the player to the last Pokémon Center they healed at (Pallet Town center if they haven't reached another)
+All fainted Pokémon should be fully restored upon arriving at the Pokémon Center after blacking out
+Show a small notification: "Your Pokémon were healed at the Pokémon Center."
+5. POKÉMON CENTER
+Each town (Pallet Town, and later Pewter City) has a Pokémon Center accessible from the town screen
+Healing is free and restores all HP and removes fainted status
+When the player visits and heals, save this location as their respawn point
+Style the Pokémon Center screen with a red roof themed card, nurse greeting text, and a "Heal Pokémon" button

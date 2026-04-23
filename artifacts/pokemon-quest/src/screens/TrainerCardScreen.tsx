@@ -1,4 +1,4 @@
-import { useGame, speciesOf, xpToNext } from "@/game/state";
+import { useGame, xpToNext } from "@/game/state";
 import Toast from "@/components/Toast";
 import trainerGif from "@assets/dai420w-1ec74242-2aad-47a3-8cf3-6c6f0f7c297b_1776838730939.gif";
 
@@ -14,7 +14,6 @@ export default function TrainerCardScreen() {
   const totalCaught = Object.values(state.pokedex).filter((e) => e.caught).length;
   const totalSeen = Object.values(state.pokedex).filter((e) => e.seen).length;
 
-  // Aggregate stats
   const totalXp = team.reduce((s, p) => s + p.xp + (p.level - 1) * 30, 0);
   const rankIdx = Math.min(5, Math.floor(totalCaught / 3) + state.badges.length);
   const ranks = ["Rookie", "Novice", "Trainer", "Veteran", "Elite", "Champion"];
@@ -54,7 +53,6 @@ export default function TrainerCardScreen() {
         />
 
         <div className="flex items-center gap-4 relative">
-          {/* Avatar */}
           <div
             className="shrink-0 grid place-items-center rounded-2xl overflow-hidden"
             style={{
@@ -96,7 +94,7 @@ export default function TrainerCardScreen() {
             >
               {(state.trainerName || "TRAINER").toUpperCase()}
             </div>
-            <div className="mt-1 inline-flex items-center gap-1.5">
+            <div className="mt-1 inline-flex items-center gap-1.5 flex-wrap">
               <span
                 className="font-mono-pq text-[10px] px-2 py-0.5 rounded-full"
                 style={{
@@ -121,7 +119,6 @@ export default function TrainerCardScreen() {
           </div>
         </div>
 
-        {/* Stats grid 2x2 */}
         <div className="grid grid-cols-2 gap-2 mt-4 relative">
           <StatCard label="PokéDollars" value={`₽${state.money}`} color="#facc15" />
           <StatCard label="Wins" value={String(state.badges.length)} color="#4ade80" />
@@ -129,7 +126,6 @@ export default function TrainerCardScreen() {
           <StatCard label="Pokédex" value={`${totalCaught}/${totalSeen}`} color="#a855f7" />
         </div>
 
-        {/* EXP / Rank progress */}
         <div className="mt-4 relative">
           <div className="flex items-center justify-between text-[10px] font-mono-pq mb-1">
             <span style={{ color: "#a1a1aa" }}>NEXT RANK</span>
@@ -165,68 +161,6 @@ export default function TrainerCardScreen() {
         </div>
       </div>
 
-      {/* Following you - mini scene */}
-      <div
-        className="pq-card relative overflow-hidden"
-        style={{
-          height: 200,
-          background: "linear-gradient(180deg, #1a3050 0%, #1f3a2e 60%, #142a1c 100%)",
-          borderColor: "var(--border)",
-        }}
-      >
-        <div
-          aria-hidden
-          className="absolute inset-x-0 bottom-0"
-          style={{
-            height: "55%",
-            background:
-              "repeating-linear-gradient(90deg, rgba(34,80,30,0.22) 0 6px, transparent 6px 14px)",
-          }}
-        />
-        <div className="absolute inset-x-0 bottom-4 flex items-end justify-center gap-2 pointer-events-none px-3">
-          <img
-            src={trainerGif}
-            alt="trainer walking"
-            className="pq-trail"
-            style={{
-              height: 110,
-              imageRendering: "pixelated",
-              filter: "drop-shadow(0 6px 0 rgba(0,0,0,0.35))",
-            }}
-          />
-          {team.map((p, i) => {
-            const sp = speciesOf(p);
-            return (
-              <div
-                key={p.uid}
-                className="pq-trail flex flex-col items-center"
-                style={{ animationDelay: `${(i + 1) * 0.18}s` }}
-              >
-                <span
-                  style={{
-                    fontSize: 36,
-                    lineHeight: 1,
-                    filter: "drop-shadow(0 4px 0 rgba(0,0,0,0.35))",
-                  }}
-                >
-                  {sp.sprite}
-                </span>
-                <div
-                  className="font-mono-pq text-[8px] mt-0.5 px-1 rounded"
-                  style={{
-                    background: "rgba(0,0,0,0.55)",
-                    color: "#fff",
-                    letterSpacing: 0.5,
-                  }}
-                >
-                  L{p.level}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
       <button
         className="pq-btn pq-btn-ghost"
         onClick={() => dispatch({ type: "SET_SCREEN", screen: "adventure" })}
@@ -234,7 +168,6 @@ export default function TrainerCardScreen() {
         ← Back
       </button>
 
-      {/* helper to keep xpToNext referenced if tree-shaken */}
       <span hidden>{xpToNext(1)}</span>
     </div>
   );

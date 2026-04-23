@@ -12,11 +12,12 @@ import PokeMartScreen from "@/screens/PokeMartScreen";
 import GymScreen from "@/screens/GymScreen";
 import PokedexScreen from "@/screens/PokedexScreen";
 import SettingsScreen from "@/screens/SettingsScreen";
+import BlackoutScreen from "@/screens/BlackoutScreen";
 import { GameProvider, useGame } from "@/game/state";
 
 function ScreenRouter() {
   const { state } = useGame();
-  const showLog = !["welcome", "menu", "starter"].includes(state.screen);
+  const showLog = !["welcome", "menu", "starter", "blackout"].includes(state.screen);
   let screen;
   switch (state.screen) {
     case "welcome": screen = <WelcomeScreen />; break;
@@ -31,6 +32,7 @@ function ScreenRouter() {
     case "gym": screen = <GymScreen />; break;
     case "pokedex": screen = <PokedexScreen />; break;
     case "settings": screen = <SettingsScreen />; break;
+    case "blackout": screen = <BlackoutScreen />; break;
     default: screen = <WelcomeScreen />;
   }
   return (

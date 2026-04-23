@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useReducer, ReactNode } from "react";
-import { SPECIES, Species } from "./data";
+import { LOCATIONS, SPECIES, Species } from "./data";
 
-export type Screen = "welcome" | "menu" | "starter" | "adventure" | "encounter" | "battle" | "center" | "mart" | "gym" | "pokedex" | "card" | "settings";
+export type Screen = "welcome" | "menu" | "starter" | "adventure" | "encounter" | "battle" | "blackout" | "center" | "mart" | "gym" | "pokedex" | "card" | "settings";
 
 export interface OwnedPokemon {
   uid: string;
@@ -23,12 +23,22 @@ export interface BattleState {
   outcome?: "won" | "lost" | "fled" | "caught";
   isGym?: boolean;
   gymId?: string;
+  isTrainer?: boolean;
+  trainerId?: string;
+  trainerLabel?: string;
+  reward?: number;
   enemyTeamRemaining?: { speciesId: number; level: number }[];
 }
 
 export interface PokedexEntry {
   seen: boolean;
   caught: boolean;
+}
+
+export interface RouteState {
+  trainersDefeated: string[];
+  explored: boolean;
+  cleared: boolean;
 }
 
 export interface GameState {
@@ -42,6 +52,9 @@ export interface GameState {
   storage: OwnedPokemon[];
   pokedex: Record<number, PokedexEntry>;
   locationId: string;
+  lastHealLocationId: string;
+  routeProgress: Record<string, RouteState>;
+  visited: Record<string, boolean>;
   battle: BattleState | null;
   toast: string | null;
   audioOn: boolean;
@@ -73,6 +86,17 @@ export function speciesOf(p: OwnedPokemon): Species {
   return SPECIES[p.speciesId];
 }
 
+export function isLocationCleared(locId: string, progress: Record<string, RouteState>): boolean {
+  const loc = LOCATIONS.find((l) => l.id === locId);
+  if (!loc) return false;
+  if (loc.isTown) return true;
+  const trainers = loc.trainers || [];
+  const r = progress[locId] || { trainersDefeated: [], explored: false, cleared: false };
+  if (r.cleared) return true;
+  const trainersDone = trainers.length === 0 || trainers.every((t) => r.trainersDefeated.includes(t.id));
+  return trainersDone && r.explored;
+}
+
 const initialState: GameState = {
   screen: "welcome",
   trainerName: "",
@@ -83,7 +107,10 @@ const initialState: GameState = {
   team: [],
   storage: [],
   pokedex: {},
-  locationId: "route1",
+  locationId: "pallet",
+  lastHealLocationId: "pallet",
+  routeProgress: {},
+  visited: { pallet: true },
   battle: null,
   toast: null,
   audioOn: true,
@@ -117,7 +144,13 @@ type Action =
   | { type: "TOGGLE_AUDIO" }
   | { type: "LOG"; lines: string[] }
   | { type: "CLEAR_LOG" }
-  | { type: "SWAP_ACTIVE"; withIndex: number };
+  | { type: "SWAP_ACTIVE"; withIndex: number }
+  | { type: "SET_LAST_HEAL"; id: string }
+  | { type: "MARK_TRAINER_DEFEATED"; locationId: string; trainerId: string }
+  | { type: "MARK_EXPLORED"; locationId: string }
+  | { type: "MARK_CLEARED"; locationId: string }
+  | { type: "MARK_VISITED"; locationId: string }
+  | { type: "RESPAWN_AT_HEAL" };
 
 function reducer(state: GameState, action: Action): GameState {
   switch (action.type) {
@@ -226,6 +259,40 @@ function reducer(state: GameState, action: Action): GameState {
       [team[0], team[i]] = [team[i], team[0]];
       return { ...state, team };
     }
+    case "SET_LAST_HEAL":
+      return { ...state, lastHealLocationId: action.id };
+    case "MARK_TRAINER_DEFEATED": {
+      const cur = state.routeProgress[action.locationId] || { trainersDefeated: [], explored: false, cleared: false };
+      if (cur.trainersDefeated.includes(action.trainerId)) return state;
+      return {
+        ...state,
+        routeProgress: {
+          ...state.routeProgress,
+          [action.locationId]: { ...cur, trainersDefeated: [...cur.trainersDefeated, action.trainerId] },
+        },
+      };
+    }
+    case "MARK_EXPLORED": {
+      const cur = state.routeProgress[action.locationId] || { trainersDefeated: [], explored: false, cleared: false };
+      if (cur.explored) return state;
+      return {
+        ...state,
+        routeProgress: { ...state.routeProgress, [action.locationId]: { ...cur, explored: true } },
+      };
+    }
+    case "MARK_CLEARED": {
+      const cur = state.routeProgress[action.locationId] || { trainersDefeated: [], explored: false, cleared: false };
+      return {
+        ...state,
+        routeProgress: { ...state.routeProgress, [action.locationId]: { ...cur, cleared: true } },
+      };
+    }
+    case "MARK_VISITED":
+      return { ...state, visited: { ...state.visited, [action.locationId]: true } };
+    case "RESPAWN_AT_HEAL": {
+      const team = state.team.map((p) => ({ ...p, hp: p.maxHp }));
+      return { ...state, team, locationId: state.lastHealLocationId, battle: null };
+    }
     default:
       return state;
   }
@@ -256,11 +323,27 @@ export function GameProvider({ children }: { children: ReactNode }) {
     try {
       const raw = localStorage.getItem(SAVE_KEY);
       if (!raw) return false;
-      const parsed = JSON.parse(raw) as GameState;
-      // back-compat: ensure gender exists
+      const parsed = JSON.parse(raw) as Partial<GameState>;
       const team = (parsed.team || []).map((p) => ({ ...p, gender: p.gender || randGender() }));
       const storage = (parsed.storage || []).map((p) => ({ ...p, gender: p.gender || randGender() }));
-      dispatch({ type: "LOAD", payload: { ...parsed, team, storage, commandLog: parsed.commandLog || [] } });
+      // Migrate locationId — if old id no longer exists, fall back to pallet
+      const validLoc = LOCATIONS.some((l) => l.id === parsed.locationId);
+      const locationId = validLoc ? parsed.locationId! : "pallet";
+      const lastHeal = parsed.lastHealLocationId && LOCATIONS.some((l) => l.id === parsed.lastHealLocationId)
+        ? parsed.lastHealLocationId
+        : "pallet";
+      const merged: GameState = {
+        ...initialState,
+        ...parsed,
+        team,
+        storage,
+        locationId,
+        lastHealLocationId: lastHeal,
+        routeProgress: parsed.routeProgress || {},
+        visited: parsed.visited || { pallet: true },
+        commandLog: parsed.commandLog || [],
+      } as GameState;
+      dispatch({ type: "LOAD", payload: merged });
       return true;
     } catch { return false; }
   };
@@ -282,7 +365,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const toSave = { ...state, battle: null, toast: null };
       localStorage.setItem(SAVE_KEY, JSON.stringify(toSave));
     } catch { /* ignore */ }
-  }, [state.team, state.money, state.pokeballs, state.potions, state.badges, state.locationId, state.pokedex, state.screen]);
+  }, [state.team, state.money, state.pokeballs, state.potions, state.badges, state.locationId, state.pokedex, state.screen, state.lastHealLocationId, state.routeProgress, state.visited]);
 
   // Auto clear toast
   useEffect(() => {

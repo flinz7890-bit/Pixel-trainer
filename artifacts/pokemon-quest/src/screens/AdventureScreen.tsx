@@ -1,5 +1,6 @@
-import { useGame, makePokemon, BattleState } from "@/game/state";
-import { GYMS, LOCATIONS, SPECIES } from "@/game/data";
+import { useEffect } from "react";
+import { useGame, makePokemon, BattleState, isLocationCleared } from "@/game/state";
+import { GYMS, LOCATIONS, SPECIES, TrainerNPC } from "@/game/data";
 import PokemonCard from "@/components/PokemonCard";
 import Toast from "@/components/Toast";
 
@@ -20,7 +21,7 @@ function pickEncounter(locId: string) {
 }
 
 function Particles() {
-  const dots = Array.from({ length: 20 });
+  const dots = Array.from({ length: 18 });
   return (
     <div className="particles">
       {dots.map((_, i) => (
@@ -31,8 +32,7 @@ function Particles() {
             top: `${Math.random() * 100}%`,
             animationDelay: `${Math.random() * 3}s`,
             animationDuration: `${2 + Math.random() * 3}s`,
-            background:
-              ["#4ade80", "#a855f7", "#22d3ee", "#facc15", "#f43f5e"][i % 5],
+            background: ["#4ade80", "#a855f7", "#22d3ee", "#facc15", "#f43f5e"][i % 5],
             opacity: 0.5,
           }}
         />
@@ -49,6 +49,26 @@ export default function AdventureScreen() {
   const gym = loc.gymId ? GYMS.find((g) => g.id === loc.gymId) : undefined;
 
   const totalCaught = Object.values(state.pokedex).filter((e) => e.caught).length;
+  const progress = state.routeProgress[loc.id] || { trainersDefeated: [], explored: false, cleared: false };
+  const trainers = loc.trainers || [];
+  const remainingTrainers = trainers.filter((t) => !progress.trainersDefeated.includes(t.id));
+  const cleared = isLocationCleared(loc.id, state.routeProgress);
+  const nextLoc = loc.nextLocationId ? LOCATIONS.find((l) => l.id === loc.nextLocationId) : undefined;
+  const prevLoc = loc.prevLocationId ? LOCATIONS.find((l) => l.id === loc.prevLocationId) : undefined;
+
+  // Auto-award arrival badge for terminal cities (e.g., Pewter)
+  useEffect(() => {
+    if (loc.arrivalBadge && !state.badges.includes(loc.arrivalBadge) && !state.visited[loc.id]) {
+      dispatch({ type: "ADD_BADGE", badge: loc.arrivalBadge });
+      dispatch({ type: "ADD_MONEY", amount: 500 });
+      dispatch({ type: "MARK_VISITED", locationId: loc.id });
+      dispatch({ type: "TOAST", text: `Earned ${loc.arrivalBadge}! +500₽` });
+      const msg = loc.arrivalMessage || `You arrived at ${loc.name}!`;
+      dispatch({ type: "LOG", lines: [msg] });
+    } else if (!state.visited[loc.id]) {
+      dispatch({ type: "MARK_VISITED", locationId: loc.id });
+    }
+  }, [loc.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const explore = () => {
     if (inTown) {
@@ -66,6 +86,7 @@ export default function AdventureScreen() {
     }
     const enemy = makePokemon(enc.speciesId, enc.level);
     dispatch({ type: "SEE_POKEMON", speciesId: enc.speciesId });
+    dispatch({ type: "MARK_EXPLORED", locationId: loc.id });
     const battle: BattleState = {
       enemy,
       log: [`A wild ${SPECIES[enc.speciesId].name} appeared!`],
@@ -83,7 +104,38 @@ export default function AdventureScreen() {
     dispatch({ type: "SET_SCREEN", screen: "encounter" });
   };
 
-  const goLoc = (id: string) => {
+  const challengeTrainer = (t: TrainerNPC) => {
+    if (!active || active.hp <= 0) {
+      dispatch({ type: "TOAST", text: "Your Pokémon needs healing first!" });
+      return;
+    }
+    if (state.team.every((p) => p.hp <= 0)) {
+      dispatch({ type: "TOAST", text: "All your Pokémon have fainted!" });
+      return;
+    }
+    const first = t.team[0];
+    const enemy = makePokemon(first.speciesId, first.level);
+    const rest = t.team.slice(1);
+    const battle: BattleState = {
+      enemy,
+      log: [`${t.title} ${t.name} wants to battle!`, t.intro, `${t.title} sent out ${SPECIES[first.speciesId].name}!`],
+      busy: false,
+      turn: "player",
+      isTrainer: true,
+      trainerId: t.id,
+      trainerLabel: `${t.title} ${t.name}`,
+      reward: t.reward,
+      enemyTeamRemaining: rest,
+    };
+    dispatch({ type: "SET_BATTLE", battle });
+    dispatch({
+      type: "LOG",
+      lines: [`${t.title} ${t.name} challenged you!`, `"${t.intro}"`],
+    });
+    dispatch({ type: "SET_SCREEN", screen: "battle" });
+  };
+
+  const travelTo = (id: string) => {
     dispatch({ type: "SET_LOCATION", id });
     const next = LOCATIONS.find((l) => l.id === id)!;
     dispatch({ type: "LOG", lines: [`You traveled to ${next.name}.`] });
@@ -148,54 +200,143 @@ export default function AdventureScreen() {
           </div>
           <div className="pq-card-2 px-2 py-1.5 text-center">
             <div style={{ color: "#71717a" }} className="text-[9px] uppercase">Badges</div>
-            <div className="font-bold" style={{ color: "#eab308" }}>{state.badges.length}/8</div>
+            <div className="font-bold" style={{ color: "#eab308" }}>{state.badges.length}</div>
           </div>
         </div>
       </div>
 
-      {/* Region selector */}
-      <div className="pq-card p-3">
-        <div className="flex items-center justify-between gap-2">
-          <div className="text-[10px] font-mono-pq tracking-widest uppercase" style={{ color: "#22d3ee" }}>
-            Current Region
-          </div>
-          <select
-            value={state.locationId}
-            onChange={(e) => goLoc(e.target.value)}
-            className="font-mono-pq text-[12px] rounded-lg px-2 py-1 outline-none"
-            style={{
-              background: "var(--panel-3)",
-              border: "1px solid var(--border-2)",
-              color: "var(--text)",
-            }}
-          >
-            {LOCATIONS.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.emoji} {l.name}
-                {l.isTown ? " 🏙" : ""}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Team */}
+      {/* Team — horizontal scroll */}
       <div>
-        <div
-          className="text-[10px] font-mono-pq tracking-widest uppercase mb-1.5 px-1"
-          style={{ color: "#4ade80" }}
-        >
-          Your Team ({state.team.length}/6)
+        <div className="flex items-center justify-between px-1 mb-1.5">
+          <div
+            className="text-[10px] font-mono-pq tracking-widest uppercase"
+            style={{ color: "#4ade80" }}
+          >
+            Team ({state.team.length}/6)
+          </div>
+          <div className="text-[9px] font-mono-pq" style={{ color: "#71717a" }}>
+            ← swipe →
+          </div>
         </div>
-        <div className="flex flex-col gap-2">
+        <div
+          className="flex gap-2 overflow-x-auto pb-1 px-0.5"
+          style={{
+            scrollSnapType: "x mandatory",
+            WebkitOverflowScrolling: "touch",
+            scrollbarWidth: "thin",
+          }}
+        >
           {state.team.length === 0 && (
-            <div className="pq-card p-4 text-sm text-center" style={{ color: "#a1a1aa" }}>
+            <div className="pq-card p-4 text-sm text-center w-full" style={{ color: "#a1a1aa" }}>
               No Pokémon in your team.
             </div>
           )}
           {state.team.map((p, i) => (
-            <PokemonCard key={p.uid} p={p} active={i === 0} />
+            <div key={p.uid} style={{ scrollSnapAlign: "start" }}>
+              <PokemonCard p={p} active={i === 0} compact />
+            </div>
           ))}
+        </div>
+      </div>
+
+      {/* Travel / Progression */}
+      <div className="pq-card p-3 flex flex-col gap-2">
+        <div
+          className="text-[10px] font-mono-pq tracking-widest uppercase"
+          style={{ color: "#22d3ee" }}
+        >
+          {inTown ? "Town Map" : "Route Progress"}
+        </div>
+
+        {/* Route progress detail */}
+        {!inTown && (
+          <div className="text-[11px] font-mono-pq" style={{ color: "#d4d4d8" }}>
+            <div className="flex items-center justify-between">
+              <span>
+                Trainers: {trainers.length - remainingTrainers.length}/{trainers.length}
+              </span>
+              <span>{progress.explored ? "✓ explored" : "not explored"}</span>
+            </div>
+            <div className="mt-1 rounded-full overflow-hidden" style={{ height: 6, background: "#2a2a3a" }}>
+              <div
+                style={{
+                  width: `${
+                    ((trainers.length - remainingTrainers.length) / Math.max(1, trainers.length)) * 50 +
+                    (progress.explored ? 50 : 0)
+                  }%`,
+                  height: "100%",
+                  background: cleared ? "linear-gradient(90deg,#4ade80,#22c55e)" : "linear-gradient(90deg,#a855f7,#22d3ee)",
+                  transition: "width .4s",
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Trainer challenges (routes only) */}
+        {!inTown && remainingTrainers.length > 0 && (
+          <div className="flex flex-col gap-1.5 mt-1">
+            <div className="text-[10px] font-mono-pq" style={{ color: "#facc15" }}>
+              ⚔ TRAINER{remainingTrainers.length > 1 ? "S" : ""} ON THIS ROUTE
+            </div>
+            {remainingTrainers.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => challengeTrainer(t)}
+                className="pq-card-2 flex items-center gap-3 p-2 text-left hover:brightness-110 transition"
+                style={{ borderColor: "rgba(250,204,21,0.40)" }}
+              >
+                <div className="text-2xl">{t.sprite}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[12px] font-bold truncate" style={{ color: "#facc15" }}>
+                    {t.title} {t.name}
+                  </div>
+                  <div className="text-[10px] font-mono-pq" style={{ color: "#a1a1aa" }}>
+                    {t.team.length} Pokémon · ₽{t.reward}
+                  </div>
+                </div>
+                <div className="text-[10px] font-mono-pq" style={{ color: "#facc15" }}>
+                  CHALLENGE ▶
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {!inTown && remainingTrainers.length === 0 && trainers.length > 0 && (
+          <div
+            className="text-[11px] font-mono-pq mt-1"
+            style={{ color: "#4ade80" }}
+          >
+            ✓ All trainers on this route defeated.
+          </div>
+        )}
+
+        {/* Travel buttons */}
+        <div className="flex flex-col gap-1.5 mt-1">
+          {prevLoc && (
+            <button className="pq-btn pq-btn-ghost" onClick={() => travelTo(prevLoc.id)}>
+              ← Back to {prevLoc.name}
+            </button>
+          )}
+          {nextLoc && (
+            <button
+              className="pq-btn pq-btn-primary"
+              onClick={() => travelTo(nextLoc.id)}
+              disabled={!inTown && !cleared}
+              title={!inTown && !cleared ? "Defeat all trainers and explore the route first" : undefined}
+            >
+              {inTown ? `▶ Travel to ${nextLoc.name}` : cleared ? `▶ Continue to ${nextLoc.name}` : `🔒 ${nextLoc.name} (clear route first)`}
+            </button>
+          )}
+          {!nextLoc && (
+            <div
+              className="text-[11px] text-center font-mono-pq"
+              style={{ color: "#facc15" }}
+            >
+              ★ End of journey for now
+            </div>
+          )}
         </div>
       </div>
 
@@ -259,21 +400,21 @@ export default function AdventureScreen() {
           <span className="label">Gym</span>
         </button>
         <button className="hub-btn c-cyan" onClick={() => goTo("card")}>
-          <span className="icon c-cyan">🚶</span>
-          <span className="label">Walk</span>
-        </button>
-
-        <button className="hub-btn c-pink" onClick={() => goTo("card")}>
-          <span className="icon c-pink">🪪</span>
+          <span className="icon c-cyan">🪪</span>
           <span className="label">Card</span>
         </button>
-        <button className="hub-btn c-gold" onClick={() => goTo("pokedex")}>
-          <span className="icon c-gold">⭐</span>
+
+        <button className="hub-btn c-pink" onClick={() => goTo("pokedex")}>
+          <span className="icon c-pink">⭐</span>
           <span className="label">Caught</span>
         </button>
         <button className="hub-btn c-blue" onClick={() => goTo("settings")}>
           <span className="icon c-blue">⚙</span>
           <span className="label">Settings</span>
+        </button>
+        <button className="hub-btn c-gold" onClick={() => goTo("card")}>
+          <span className="icon c-gold">👤</span>
+          <span className="label">Trainer</span>
         </button>
       </div>
 

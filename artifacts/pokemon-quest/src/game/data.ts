@@ -64,6 +64,16 @@ export const SPECIES: Record<number, Species> = {
 
 export const STARTERS = [4, 7, 1, 25];
 
+export interface TrainerNPC {
+  id: string;
+  title: string;
+  name: string;
+  sprite: string;
+  team: { speciesId: number; level: number }[];
+  reward: number;
+  intro: string;
+}
+
 export interface Location {
   id: string;
   name: string;
@@ -71,9 +81,22 @@ export interface Location {
   isTown?: boolean;
   gymId?: string;
   encounters: { speciesId: number; weight: number; minLevel: number; maxLevel: number }[];
+  trainers?: TrainerNPC[];
+  nextLocationId?: string;
+  prevLocationId?: string;
+  arrivalBadge?: string; // auto-awarded badge on first arrival
+  arrivalMessage?: string;
 }
 
 export const LOCATIONS: Location[] = [
+  {
+    id: "pallet",
+    name: "Pallet Town",
+    emoji: "🏡",
+    isTown: true,
+    encounters: [],
+    nextLocationId: "route1",
+  },
   {
     id: "route1",
     name: "Route 1",
@@ -84,24 +107,97 @@ export const LOCATIONS: Location[] = [
       { speciesId: 10, weight: 2, minLevel: 2, maxLevel: 3 },
       { speciesId: 13, weight: 2, minLevel: 2, maxLevel: 3 },
     ],
-  },
-  {
-    id: "viridian-city",
-    name: "Viridian City",
-    emoji: "🏘️",
-    isTown: true,
-    encounters: [],
-  },
-  {
-    id: "viridian",
-    name: "Viridian Forest",
-    emoji: "🌲",
-    encounters: [
-      { speciesId: 10, weight: 4, minLevel: 4, maxLevel: 6 },
-      { speciesId: 13, weight: 4, minLevel: 4, maxLevel: 6 },
-      { speciesId: 25, weight: 1, minLevel: 5, maxLevel: 7 },
-      { speciesId: 16, weight: 2, minLevel: 4, maxLevel: 6 },
+    trainers: [
+      {
+        id: "r1-joey",
+        title: "Youngster",
+        name: "Joey",
+        sprite: "🧒",
+        team: [{ speciesId: 19, level: 4 }],
+        reward: 80,
+        intro: "Hey! My Rattata is in the top percentage!",
+      },
+      {
+        id: "r1-bug",
+        title: "Bug Catcher",
+        name: "Rick",
+        sprite: "🪲",
+        team: [
+          { speciesId: 10, level: 3 },
+          { speciesId: 13, level: 4 },
+        ],
+        reward: 100,
+        intro: "I caught a bunch of bugs — wanna battle?",
+      },
     ],
+    prevLocationId: "pallet",
+    nextLocationId: "route2",
+  },
+  {
+    id: "route2",
+    name: "Route 2",
+    emoji: "🌳",
+    encounters: [
+      { speciesId: 16, weight: 3, minLevel: 4, maxLevel: 6 },
+      { speciesId: 10, weight: 3, minLevel: 4, maxLevel: 6 },
+      { speciesId: 13, weight: 3, minLevel: 4, maxLevel: 6 },
+      { speciesId: 25, weight: 1, minLevel: 5, maxLevel: 7 },
+    ],
+    trainers: [
+      {
+        id: "r2-bug",
+        title: "Bug Catcher",
+        name: "Doug",
+        sprite: "🪳",
+        team: [
+          { speciesId: 10, level: 6 },
+          { speciesId: 13, level: 6 },
+        ],
+        reward: 140,
+        intro: "Bugs rule! Take this!",
+      },
+    ],
+    prevLocationId: "route1",
+    nextLocationId: "route3",
+  },
+  {
+    id: "route3",
+    name: "Route 3",
+    emoji: "⛰️",
+    encounters: [
+      { speciesId: 74, weight: 4, minLevel: 6, maxLevel: 9 },
+      { speciesId: 41, weight: 3, minLevel: 6, maxLevel: 9 },
+      { speciesId: 19, weight: 2, minLevel: 6, maxLevel: 8 },
+      { speciesId: 16, weight: 2, minLevel: 6, maxLevel: 8 },
+    ],
+    trainers: [
+      {
+        id: "r3-hiker",
+        title: "Hiker",
+        name: "Marty",
+        sprite: "🥾",
+        team: [
+          { speciesId: 74, level: 8 },
+          { speciesId: 74, level: 9 },
+        ],
+        reward: 220,
+        intro: "These mountains are mine! Battle!",
+      },
+      {
+        id: "r3-lass",
+        title: "Lass",
+        name: "Janie",
+        sprite: "👧",
+        team: [
+          { speciesId: 41, level: 8 },
+          { speciesId: 19, level: 9 },
+        ],
+        reward: 200,
+        intro: "Hi! Want to play with my Pokémon?",
+      },
+    ],
+    prevLocationId: "route2",
+    nextLocationId: "pewter",
   },
   {
     id: "pewter",
@@ -110,43 +206,9 @@ export const LOCATIONS: Location[] = [
     isTown: true,
     gymId: "brock",
     encounters: [],
-  },
-  {
-    id: "moon",
-    name: "Mt. Moon",
-    emoji: "⛰️",
-    encounters: [
-      { speciesId: 41, weight: 5, minLevel: 6, maxLevel: 9 },
-      { speciesId: 74, weight: 4, minLevel: 7, maxLevel: 10 },
-      { speciesId: 92, weight: 1, minLevel: 8, maxLevel: 10 },
-    ],
-  },
-  {
-    id: "cerulean",
-    name: "Cerulean City",
-    emoji: "💧",
-    isTown: true,
-    gymId: "misty",
-    encounters: [],
-  },
-  {
-    id: "celadon",
-    name: "Celadon Outskirts",
-    emoji: "🏙️",
-    encounters: [
-      { speciesId: 63, weight: 3, minLevel: 9, maxLevel: 12 },
-      { speciesId: 92, weight: 2, minLevel: 9, maxLevel: 12 },
-      { speciesId: 41, weight: 4, minLevel: 9, maxLevel: 12 },
-      { speciesId: 19, weight: 2, minLevel: 8, maxLevel: 11 },
-    ],
-  },
-  {
-    id: "vermilion",
-    name: "Vermilion City",
-    emoji: "⚓",
-    isTown: true,
-    gymId: "surge",
-    encounters: [],
+    prevLocationId: "route3",
+    arrivalBadge: "Boulder Badge",
+    arrivalMessage: "You arrived at Pewter City! The Pewter Gym leader gifted you the Boulder Badge for your journey.",
   },
 ];
 
@@ -172,29 +234,5 @@ export const GYMS: GymLeader[] = [
     ],
     reward: 500,
     unlockBadgeCount: 0,
-  },
-  {
-    id: "misty",
-    name: "Misty",
-    city: "Cerulean City",
-    badge: "Cascade Badge",
-    team: [
-      { speciesId: 7, level: 14 },
-      { speciesId: 8, level: 16 },
-    ],
-    reward: 800,
-    unlockBadgeCount: 1,
-  },
-  {
-    id: "surge",
-    name: "Lt. Surge",
-    city: "Vermilion City",
-    badge: "Thunder Badge",
-    team: [
-      { speciesId: 25, level: 18 },
-      { speciesId: 26, level: 20 },
-    ],
-    reward: 1200,
-    unlockBadgeCount: 2,
   },
 ];

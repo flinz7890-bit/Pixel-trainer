@@ -110,8 +110,9 @@ export default function BattleScreen() {
     dispatch({ type: "PATCH_BATTLE", patch: { outcome } });
     await sleep(900);
     if (outcome === "lost") {
-      dispatch({ type: "TOAST", text: "You were defeated. Healed at PokéCenter." });
-      dispatch({ type: "HEAL_ALL" });
+      dispatch({ type: "SET_BATTLE", battle: null });
+      dispatch({ type: "SET_SCREEN", screen: "blackout" });
+      return;
     }
     dispatch({ type: "SET_BATTLE", battle: null });
     dispatch({ type: "SET_SCREEN", screen: "adventure" });
@@ -148,6 +149,18 @@ export default function BattleScreen() {
     await sleep(550);
     if (newHp <= 0) {
       log([`${playerSp.name} fainted!`]);
+      await sleep(500);
+      // Find another non-fainted teammate
+      const team = state.team;
+      const altIdx = team.findIndex((p, i) => i !== 0 && p.hp > 0);
+      if (altIdx > 0) {
+        const inName = speciesOf(team[altIdx]).name.toUpperCase();
+        log([`Go! ${inName}!`]);
+        dispatch({ type: "SWAP_ACTIVE", withIndex: altIdx });
+        await sleep(700);
+        dispatch({ type: "PATCH_BATTLE", patch: { turn: "player", busy: false } });
+        return;
+      }
       await endBattleAfter("lost");
       return;
     }
@@ -155,7 +168,8 @@ export default function BattleScreen() {
   };
 
   const handleNextEnemyOrEnd = async () => {
-    if (battle.isGym && battle.enemyTeamRemaining && battle.enemyTeamRemaining.length > 0) {
+    const isMulti = battle.isGym || battle.isTrainer;
+    if (isMulti && battle.enemyTeamRemaining && battle.enemyTeamRemaining.length > 0) {
       const next = battle.enemyTeamRemaining[0];
       const rest = battle.enemyTeamRemaining.slice(1);
       const nextEnemy = makePokemon(next.speciesId, next.level);
@@ -171,6 +185,13 @@ export default function BattleScreen() {
       dispatch({ type: "ADD_BADGE", badge: gym.badge });
       dispatch({ type: "ADD_MONEY", amount: gym.reward });
       dispatch({ type: "TOAST", text: `Earned ${gym.badge}! +${gym.reward}₽` });
+    }
+    if (battle.isTrainer && battle.trainerId) {
+      const reward = battle.reward || 0;
+      if (reward > 0) dispatch({ type: "ADD_MONEY", amount: reward });
+      dispatch({ type: "MARK_TRAINER_DEFEATED", locationId: state.locationId, trainerId: battle.trainerId });
+      log([`You defeated ${battle.trainerLabel || "the Trainer"}!`, `You got ₽${reward} for winning!`]);
+      dispatch({ type: "TOAST", text: `Defeated ${battle.trainerLabel || "Trainer"}! +${reward}₽` });
     }
     await endBattleAfter("won");
   };
@@ -203,7 +224,7 @@ export default function BattleScreen() {
 
   const onCatch = async () => {
     if (battle.busy || battle.outcome) return;
-    if (battle.isGym) {
+    if (battle.isGym || battle.isTrainer) {
       dispatch({ type: "TOAST", text: "You can't catch a Trainer's Pokémon!" });
       return;
     }
@@ -256,8 +277,8 @@ export default function BattleScreen() {
 
   const onRun = async () => {
     if (battle.busy || battle.outcome) return;
-    if (battle.isGym) {
-      dispatch({ type: "TOAST", text: "Can't run from a Gym battle!" });
+    if (battle.isGym || battle.isTrainer) {
+      dispatch({ type: "TOAST", text: "Can't run from a Trainer battle!" });
       return;
     }
     setMenu("main");
@@ -294,7 +315,7 @@ export default function BattleScreen() {
         >
           ▶ {turnLabel}
         </div>
-        {battle.isGym && (
+        {(battle.isGym || battle.isTrainer) && (
           <div
             className="font-mono-pq text-[10px] tracking-widest uppercase px-2 py-1 rounded-full"
             style={{
@@ -303,7 +324,7 @@ export default function BattleScreen() {
               border: "1px solid rgba(250,204,21,0.40)",
             }}
           >
-            🏟 GYM BATTLE
+            {battle.isGym ? "🏟 GYM BATTLE" : `⚔ ${battle.trainerLabel || "TRAINER"}`}
           </div>
         )}
       </div>
@@ -395,7 +416,7 @@ export default function BattleScreen() {
             </button>
             <button
               className="bt-menu-btn bt-menu-run"
-              disabled={battle.busy || !!battle.outcome || !!battle.isGym}
+              disabled={battle.busy || !!battle.outcome || !!battle.isGym || !!battle.isTrainer}
               onClick={onRun}
             >
               🏃 Run
@@ -493,7 +514,7 @@ export default function BattleScreen() {
             </button>
             <button
               className="bt-menu-btn bt-menu-bag"
-              disabled={battle.busy || !!battle.isGym}
+              disabled={battle.busy || !!battle.isGym || !!battle.isTrainer}
               onClick={onCatch}
             >
               ⚪ Poké Ball ×{state.pokeballs}
