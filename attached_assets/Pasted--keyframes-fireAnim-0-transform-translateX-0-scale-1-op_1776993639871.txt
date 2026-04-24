@@ -1,0 +1,59 @@
+@keyframes fireAnim {
+  0% { transform: translateX(0) scale(1); opacity: 1; background: #ff4400; }
+  100% { transform: translateX(150px) scale(0.2); opacity: 0; background: #ff8800; }
+}
+@keyframes waterAnim {
+  0% { transform: translateX(0) skewX(-20deg); opacity: 1; }
+  100% { transform: translateX(150px) skewX(-20deg); opacity: 0; }
+}
+@keyframes electricAnim {
+  0%, 100% { opacity: 0; }
+  25%, 75% { opacity: 1; background: yellow; box-shadow: 0 0 20px yellow; }
+  50% { opacity: 0.5; }
+}
+@keyframes grassAnim {
+  0% { transform: translate(0,0) rotate(0deg); opacity: 1; }
+  100% { transform: translate(120px,-60px) rotate(360deg); opacity: 0; }
+}
+@keyframes psychicAnim {
+  0% { transform: scale(0); opacity: 1; background: rgba(255,0,255,0.4); }
+  100% { transform: scale(4); opacity: 0; }
+}
+@keyframes iceAnim {
+  0% { transform: translateX(0) rotate(45deg); opacity: 1; background: #aaddff; }
+  100% { transform: translateX(150px) rotate(45deg); opacity: 0; }
+}
+@keyframes groundAnim {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-8px); }
+  80% { transform: translateX(8px); }
+}
+@keyframes normalAnim {
+  0% { transform: translateX(0); }
+  50% { transform: translateX(30px); }
+  100% { transform: translateX(0); }
+}
+@keyframes poisonAnim {
+  0% { transform: translateY(0) scale(1); opacity: 1; background: #aa00ff; border-radius: 50%; }
+  100% { transform: translateY(-80px) scale(0.3); opacity: 0; }
+}
+@keyframes ghostAnim {
+  0% { transform: translateX(0) scale(1); opacity: 0.8; background: #6644aa; border-radius: 50%; }
+  100% { transform: translateX(120px) scale(1.5); opacity: 0; }
+}
+@keyframes rockAnim {
+  0% { transform: translate(0,0) rotate(0deg); opacity: 1; background: #888866; }
+  100% { transform: translate(130px,20px) rotate(180deg); opacity: 0; }
+}
+@keyframes flyingAnim {
+  0% { transform: translateX(0) scaleY(1); opacity: 1; background: #aaccff; }
+  50% { transform: translateX(75px) scaleY(0.2); }
+  100% { transform: translateX(150px) scaleY(1); opacity: 0; }
+}
+@keyframes dragonAnim {
+  0% { transform: scale(0) rotate(0deg); opacity: 1; }
+  50% { transform: scale(1.5) rotate(180deg); opacity: 0.8; background: #7744ff; }
+  100% { transform: scale(0.5) rotate(360deg); opacity: 0; }
+}

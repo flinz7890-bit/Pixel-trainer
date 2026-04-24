@@ -1,10 +1,44 @@
 import PokeSprite from "@/components/PokeSprite";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useGame, speciesOf, OwnedPokemon, makePokemon } from "@/game/state";
 import { Move, SPECIES, GYMS, LOCATIONS, PokeType, effectiveness, effectivenessLabel } from "@/game/data";
 import { ITEMS as ITEM_DEFS, getItem } from "@/game/items";
 import Toast from "@/components/Toast";
 import { typeColor } from "@/components/TypeBadge";
+import TrainerSprite, { GYM_LEADER_SPRITES, ROUTE_TRAINER_SPRITES } from "@/components/TrainerSprite";
+
+// Move type → CSS animation name + duration (ms)
+const MOVE_ANIM: Record<string, { name: string; dur: number }> = {
+  fire:     { name: "fireAnim",     dur: 600 },
+  water:    { name: "waterAnim",    dur: 500 },
+  electric: { name: "electricAnim", dur: 600 },
+  grass:    { name: "grassAnim",    dur: 700 },
+  psychic:  { name: "psychicAnim",  dur: 700 },
+  ice:      { name: "iceAnim",      dur: 500 },
+  ground:   { name: "groundAnim",   dur: 500 },
+  normal:   { name: "normalAnim",   dur: 400 },
+  fighting: { name: "normalAnim",   dur: 400 },
+  poison:   { name: "poisonAnim",   dur: 600 },
+  ghost:    { name: "ghostAnim",    dur: 700 },
+  rock:     { name: "rockAnim",     dur: 600 },
+  flying:   { name: "flyingAnim",   dur: 700 },
+  dragon:   { name: "dragonAnim",   dur: 800 },
+  bug:      { name: "grassAnim",    dur: 600 },
+  steel:    { name: "rockAnim",     dur: 600 },
+  dark:     { name: "ghostAnim",    dur: 700 },
+  fairy:    { name: "psychicAnim",  dur: 700 },
+};
+
+function trainerTitleToSpriteKey(title: string): string | null {
+  const t = title.toLowerCase().replace(/[^a-z]/g, "");
+  if (t.includes("youngster")) return "youngster";
+  if (t.includes("lass")) return "lass";
+  if (t.includes("bug")) return "bugcatcher";
+  if (t.includes("hiker")) return "hiker";
+  if (t.includes("camper")) return "camper";
+  if (t.includes("picnicker")) return "picnicker";
+  return null;
+}
 
 const POKEBALL_IMG: Record<string, string> = {
   pokeball:  "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png",
@@ -59,6 +93,51 @@ export default function BattleScreen() {
   const [turnNum, setTurnNum] = useState(1);
   const [throwing, setThrowing] = useState<null | { ball: string; phase: "throw" | "wobble" | "burst" | "captured" }>(null);
   const [enemyCapture, setEnemyCapture] = useState(false);
+  const enemySpriteRef = useRef<HTMLDivElement>(null);
+  const playerSpriteRef = useRef<HTMLDivElement>(null);
+  const arenaRef = useRef<HTMLDivElement>(null);
+
+  const playMoveAnimation = (moveType: PokeType, attackerSide: "player" | "enemy") => {
+    return new Promise<void>((resolve) => {
+      const defenderEl = attackerSide === "player" ? enemySpriteRef.current : playerSpriteRef.current;
+      const cfg = MOVE_ANIM[moveType.toLowerCase()] || MOVE_ANIM.normal;
+      if (!defenderEl) { setTimeout(resolve, cfg.dur); return; }
+      const fx = document.createElement("div");
+      fx.className = "pq-move-fx";
+      fx.style.top = "30%";
+      if (attackerSide === "player") {
+        fx.style.left = "-80px";
+      } else {
+        fx.style.right = "-80px";
+        fx.style.transform = "scaleX(-1)";
+      }
+      fx.style.animation = `${cfg.name} ${cfg.dur}ms ease-out forwards`;
+      defenderEl.appendChild(fx);
+      if (cfg.name === "groundAnim" && arenaRef.current) {
+        arenaRef.current.classList.add("pq-shake");
+        setTimeout(() => arenaRef.current?.classList.remove("pq-shake"), cfg.dur);
+      }
+      setTimeout(() => { fx.remove(); resolve(); }, cfg.dur + 30);
+    });
+  };
+
+  const showFloatingDamage = (side: "enemy" | "player", dmg: number, mult: number) => {
+    const target = side === "enemy" ? enemySpriteRef.current : playerSpriteRef.current;
+    if (!target) return;
+    const dmgDiv = document.createElement("div");
+    dmgDiv.className = "pq-dmg-float";
+    dmgDiv.textContent = `-${dmg}`;
+    target.appendChild(dmgDiv);
+    setTimeout(() => dmgDiv.remove(), 1100);
+    if (mult > 1 || (mult > 0 && mult < 1)) {
+      const eff = document.createElement("div");
+      eff.className = "pq-dmg-eff";
+      eff.textContent = mult > 1 ? "Super effective!" : "Not very effective...";
+      eff.style.color = mult > 1 ? "#fb923c" : "#9ca3af";
+      target.appendChild(eff);
+      setTimeout(() => eff.remove(), 1100);
+    }
+  };
 
   const player = state.team[0];
   const battle = state.battle;
@@ -113,18 +192,20 @@ export default function BattleScreen() {
   const enemyTurn = async () => {
     if (battle.outcome) return;
     setBusy(true);
-    await sleep(700);
+    await sleep(500);
     const move = enemySp.moves[Math.floor(Math.random() * enemySp.moves.length)];
-    const { dmg, mult } = calcDamage(enemy, move, playerSp.type);
     log([`Foe ${enemySp.name} used ${move.name}!`]);
+    // Play move animation BEFORE damage
+    await playMoveAnimation(move.type, "enemy");
+    const { dmg, mult } = calcDamage(enemy, move, playerSp.type);
     setPlayerShake(true);
     setTimeout(() => setPlayerShake(false), 500);
-    await sleep(350);
+    showFloatingDamage("player", dmg, mult);
     const newHp = Math.max(0, player.hp - dmg);
     dispatch({ type: "PATCH_PLAYER_ACTIVE", patch: { hp: newHp } });
     const effMsg = effectivenessLabel(mult);
     log([`It dealt ${dmg} damage!`, ...(effMsg ? [effMsg] : [])]);
-    await sleep(550);
+    await sleep(900);
     if (newHp <= 0) {
       log([`${playerSp.name} fainted!`]);
       await sleep(500);
@@ -179,15 +260,17 @@ export default function BattleScreen() {
     if (battle.busy || battle.turn !== "player" || battle.outcome) return;
     setBusy(true);
     log([`${playerSp.name} used ${move.name}!`]);
+    // Play move animation BEFORE damage applies
+    await playMoveAnimation(move.type, "player");
+    const { dmg, mult } = calcDamage(player, move, enemySp.type);
     setEnemyShake(true);
     setTimeout(() => setEnemyShake(false), 500);
-    await sleep(350);
-    const { dmg, mult } = calcDamage(player, move, enemySp.type);
+    showFloatingDamage("enemy", dmg, mult);
     const newEnemyHp = Math.max(0, enemy.hp - dmg);
     dispatch({ type: "PATCH_BATTLE", patch: { enemy: { ...enemy, hp: newEnemyHp } } });
     const effMsg = effectivenessLabel(mult);
     log([`It dealt ${dmg} damage!`, ...(effMsg ? [effMsg] : [])]);
-    await sleep(550);
+    await sleep(900);
     if (newEnemyHp <= 0) {
       log([`Foe ${enemySp.name} fainted!`]);
       const xpGain = enemySp.xpYield + enemy.level * 2;
@@ -222,22 +305,23 @@ export default function BattleScreen() {
     else dispatch({ type: "BUY_ITEM", itemId: ballId, qty: -1, cost: 0 });
     log([`You threw a ${ballName} at ${enemySp.name}!`]);
 
-    // Phase 1: throw arc
+    // Phase 1: throwBall — ball flies to center (0.5s)
     setThrowing({ ball: ballId, phase: "throw" });
-    await sleep(800);
+    await sleep(500);
 
-    // Phase 2: capture shrink
+    // Phase 2: shrinkPokemon — Pokémon shrinks into ball (0.3s)
     setEnemyCapture(true);
-    await sleep(700);
+    await sleep(300);
 
-    // Phase 3: wobble
+    // Phase 3: wobbleBall — ball wobbles 3 times (1.2s)
     setThrowing({ ball: ballId, phase: "wobble" });
     const hpFactor = 1 - enemy.hp / enemy.maxHp;
     const chance = Math.min(0.95, enemySp.catchRate * mult * (0.4 + hpFactor * 0.85));
     const success = Math.random() < chance;
-    await sleep(1100);
+    await sleep(1200);
 
     if (success) {
+      // Sparkle + Gotcha!
       setThrowing({ ball: ballId, phase: "captured" });
       log([`Gotcha! ${enemySp.name} was caught!`]);
       dispatch({ type: "CATCH_POKEMON", speciesId: enemy.speciesId });
@@ -248,8 +332,9 @@ export default function BattleScreen() {
       setEnemyCapture(false);
       await endBattleAfter("caught");
     } else {
+      // burstOpen — ball bursts and Pokémon reappears
       setThrowing({ ball: ballId, phase: "burst" });
-      await sleep(360);
+      await sleep(400);
       setThrowing(null);
       setEnemyCapture(false);
       log([`Oh no! ${enemySp.name} broke free!`]);
@@ -353,7 +438,7 @@ export default function BattleScreen() {
       <div className="wb-divider" />
 
       {/* Arena card */}
-      <div className="wb-arena">
+      <div className="wb-arena" ref={arenaRef}>
         {/* Enemy row: stat box left, sprite right */}
         <div className="wb-enemy-row">
           <div className="wb-statcard">
@@ -366,9 +451,33 @@ export default function BattleScreen() {
             </div>
             <div className="wb-hp-num">{enemy.hp}/{enemy.maxHp}</div>
             <HpBar p={enemy} big />
+            {(() => {
+              if (battle.isGym && battle.gymId && GYM_LEADER_SPRITES[battle.gymId]) {
+                const g = GYM_LEADER_SPRITES[battle.gymId];
+                return (
+                  <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                    <TrainerSprite url={g.url} fallbackEmoji={g.emoji} size="sm" alt="gym leader" />
+                    <span className="wb-atk">{battle.trainerLabel || ""}</span>
+                  </div>
+                );
+              }
+              if (battle.isTrainer && battle.trainerLabel) {
+                const m = battle.trainerLabel.match(/^([A-Za-z .]+)/);
+                const key = m ? trainerTitleToSpriteKey(m[1]) : null;
+                if (key && ROUTE_TRAINER_SPRITES[key]) {
+                  return (
+                    <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                      <TrainerSprite url={ROUTE_TRAINER_SPRITES[key]} fallbackEmoji="🧑" size="sm" alt="trainer" />
+                      <span className="wb-atk">{battle.trainerLabel}</span>
+                    </div>
+                  );
+                }
+              }
+              return null;
+            })()}
           </div>
-          <div className={`wb-enemy-sprite ${enemyShake ? "pq-shake" : ""}`} style={{ position: "relative" }}>
-            <div className={enemyCapture ? "pq-capture" : ""}>
+          <div ref={enemySpriteRef} className={`wb-enemy-sprite ${enemyShake ? "pq-shake" : ""}`} style={{ position: "relative" }}>
+            <div className={enemyCapture ? "pq-shrink" : ""}>
               <PokeSprite species={enemySp} size={110} />
             </div>
             {throwing && (
@@ -376,34 +485,34 @@ export default function BattleScreen() {
                 src={POKEBALL_IMG[throwing.ball] || POKEBALL_IMG.pokeball}
                 alt="ball"
                 className={
-                  throwing.phase === "throw" ? "pq-throw"
-                  : throwing.phase === "wobble" ? "pq-wobble"
-                  : throwing.phase === "burst" ? "pq-burst"
+                  throwing.phase === "throw" ? "pq-ball-throw"
+                  : throwing.phase === "wobble" ? "pq-ball-wobble"
+                  : throwing.phase === "burst" ? "pq-ball-burst"
                   : ""
                 }
                 style={{
                   position: "absolute",
                   left: "50%",
-                  bottom: throwing.phase === "throw" ? -40 : "30%",
+                  top: "35%",
                   width: 36,
                   height: 36,
-                  transform: "translateX(-50%)",
+                  marginLeft: -18,
                   imageRendering: "pixelated",
                   filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.5))",
-                  zIndex: 5,
+                  zIndex: 13,
                 }}
                 onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
               />
             )}
             {throwing?.phase === "captured" && (
-              <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", fontSize: 28, animation: "pokeball-burst 600ms ease-out" }}>✨</div>
+              <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", fontSize: 32, zIndex: 14, animation: "burstOpen 700ms ease-out forwards" }}>✨</div>
             )}
           </div>
         </div>
 
         {/* Player row: sprite left, stat box right */}
         <div className="wb-player-row">
-          <div className={`wb-player-sprite ${playerShake ? "pq-shake" : "pq-bob"}`}>
+          <div ref={playerSpriteRef} className={`wb-player-sprite ${playerShake ? "pq-shake" : "pq-bob"}`} style={{ position: "relative" }}>
             <PokeSprite species={playerSp} size={120} back />
           </div>
           <div className="wb-statcard">

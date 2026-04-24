@@ -1,9 +1,17 @@
 import { useState } from "react";
 import { Species } from "@/game/data";
 
-// Showdown uses lowercase + alphanumerics only (e.g. "Mr. Mime" -> "mrmime")
+// Lowercase, replace spaces with hyphens, strip apostrophes/dots/punctuation
+// e.g. "Mr. Mime" -> "mr-mime", "Farfetch'd" -> "farfetchd", "Nidoran♀" -> "nidoran"
 function showdownName(name: string) {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  return name
+    .toLowerCase()
+    .replace(/['.:,!?]/g, "")
+    .replace(/[♀♂]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 export function showdownAniUrl(name: string, back = false) {
@@ -42,25 +50,20 @@ export default function PokeSprite({ species, size = 96, back = false, className
   }
 
   const url = stage === 0 ? showdownAniUrl(species.name, back) : pokeapiPngUrl(species.id, back);
-  const pixelated = stage === 1;
+  const sizeClass =
+    size <= 36 ? "poke-sprite poke-sprite-xs"
+      : size <= 64 ? "poke-sprite poke-sprite-sm"
+        : size >= 160 ? "poke-sprite poke-sprite-xl"
+          : size >= 110 ? "poke-sprite poke-sprite-lg"
+            : "poke-sprite";
 
   return (
     <img
       src={url}
       alt={species.name}
-      width={size}
-      height={size}
       onError={() => setStage((s) => s + 1)}
-      className={className}
-      style={{
-        width: size,
-        height: size,
-        objectFit: "contain",
-        imageRendering: pixelated ? "pixelated" : "auto",
-        filter: "drop-shadow(0 4px 0 rgba(0,0,0,0.35))",
-        userSelect: "none",
-        ...style,
-      }}
+      className={`${sizeClass} ${className || ""}`}
+      style={style}
       draggable={false}
     />
   );

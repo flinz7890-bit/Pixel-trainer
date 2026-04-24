@@ -53,13 +53,13 @@ export default function TrainerPickScreen() {
               <div
                 className="grid place-items-center rounded-xl"
                 style={{
-                  width: 84,
-                  height: 84,
+                  width: 96,
+                  height: 96,
                   background: `radial-gradient(closest-side, ${t.color}33, transparent 70%)`,
                   border: `1px solid ${t.color}66`,
                 }}
               >
-                <TrainerSprite url={t.url} fallbackEmoji={t.emoji} size={72} alt={t.name} />
+                <TrainerSprite url={t.url} fallbackEmoji={t.emoji} size="lg" alt={t.name} />
               </div>
               <div className="font-pixel text-[10px] mt-1" style={{ color: active ? t.color : "#d4d4d8" }}>
                 {t.name.toUpperCase()}

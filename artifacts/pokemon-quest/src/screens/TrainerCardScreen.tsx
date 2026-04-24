@@ -66,7 +66,7 @@ export default function TrainerCardScreen() {
             <TrainerSprite
               url={getTrainerOption(state.trainerSpriteId).url}
               fallbackEmoji={getTrainerOption(state.trainerSpriteId).emoji}
-              size={88}
+              size="lg"
               alt={getTrainerOption(state.trainerSpriteId).name}
             />
           </div>

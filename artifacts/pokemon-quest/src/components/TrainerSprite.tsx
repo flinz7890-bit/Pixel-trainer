@@ -8,24 +8,38 @@ export interface TrainerOption {
   color: string;
 }
 
+const SHOWDOWN = "https://play.pokemonshowdown.com/sprites/trainers";
+
 export const TRAINERS: TrainerOption[] = [
-  { id: "red",    name: "Red",    url: "https://archives.bulbagarden.net/media/upload/6/6f/Spr_B2W2_Hilbert.png", emoji: "🧢", color: "#ef4444" },
-  { id: "hilda",  name: "Hilda",  url: "https://archives.bulbagarden.net/media/upload/a/a8/Spr_B2W2_Hilda.png",   emoji: "🎽", color: "#f472b6" },
-  { id: "nate",   name: "Nate",   url: "https://archives.bulbagarden.net/media/upload/0/0b/Spr_B2W2_Nate.png",    emoji: "🧑", color: "#3b82f6" },
-  { id: "rosa",   name: "Rosa",   url: "https://archives.bulbagarden.net/media/upload/c/c8/Spr_B2W2_Rosa.png",    emoji: "👧", color: "#a855f7" },
-  { id: "ethan",  name: "Ethan",  url: "https://archives.bulbagarden.net/media/upload/0/0b/Spr_HGSS_Ethan.png",   emoji: "🧑‍🎓", color: "#fb923c" },
-  { id: "lyra",   name: "Lyra",   url: "https://archives.bulbagarden.net/media/upload/e/e2/Spr_HGSS_Lyra.png",    emoji: "👩", color: "#22c55e" },
+  { id: "hilbert", name: "Hilbert", url: `${SHOWDOWN}/hilbert.png`, emoji: "🧢",  color: "#ef4444" },
+  { id: "hilda",   name: "Hilda",   url: `${SHOWDOWN}/hilda.png`,   emoji: "🎽",  color: "#f472b6" },
+  { id: "nate",    name: "Nate",    url: `${SHOWDOWN}/nate.png`,    emoji: "🧑",  color: "#3b82f6" },
+  { id: "rosa",    name: "Rosa",    url: `${SHOWDOWN}/rosa.png`,    emoji: "👧",  color: "#a855f7" },
+  { id: "ethan",   name: "Ethan",   url: `${SHOWDOWN}/ethan.png`,   emoji: "🧑‍🎓", color: "#fb923c" },
+  { id: "lyra",    name: "Lyra",    url: `${SHOWDOWN}/lyra.png`,    emoji: "👩",  color: "#22c55e" },
+  { id: "brendan", name: "Brendan", url: `${SHOWDOWN}/brendan.png`, emoji: "🧒",  color: "#f59e0b" },
+  { id: "may",     name: "May",     url: `${SHOWDOWN}/may.png`,     emoji: "👧",  color: "#06b6d4" },
+  { id: "lucas",   name: "Lucas",   url: `${SHOWDOWN}/lucas.png`,   emoji: "🧑",  color: "#8b5cf6" },
 ];
 
 export const GYM_LEADER_SPRITES: Record<string, { url: string; emoji: string }> = {
-  brock:    { url: "https://archives.bulbagarden.net/media/upload/1/1c/Spr_HGSS_Brock.png",     emoji: "🪨" },
-  misty:    { url: "https://archives.bulbagarden.net/media/upload/0/00/Spr_HGSS_Misty.png",     emoji: "💧" },
-  surge:    { url: "https://archives.bulbagarden.net/media/upload/b/b8/Spr_HGSS_Lt_Surge.png",  emoji: "⚡" },
-  erika:    { url: "https://archives.bulbagarden.net/media/upload/6/sixty/Spr_HGSS_Erika.png",  emoji: "🌿" },
-  koga:     { url: "https://archives.bulbagarden.net/media/upload/d/d4/Spr_HGSS_Koga.png",      emoji: "☠️" },
-  sabrina:  { url: "https://archives.bulbagarden.net/media/upload/a/a1/Spr_HGSS_Sabrina.png",   emoji: "🔮" },
-  blaine:   { url: "https://archives.bulbagarden.net/media/upload/b/b1/Spr_HGSS_Blaine.png",    emoji: "🔥" },
-  giovanni: { url: "https://archives.bulbagarden.net/media/upload/f/f8/Spr_HGSS_Giovanni.png",  emoji: "🦊" },
+  brock:    { url: `${SHOWDOWN}/brock.png`,    emoji: "🪨" },
+  misty:    { url: `${SHOWDOWN}/misty.png`,    emoji: "💧" },
+  surge:    { url: `${SHOWDOWN}/ltsurge.png`,  emoji: "⚡" },
+  erika:    { url: `${SHOWDOWN}/erika.png`,    emoji: "🌿" },
+  koga:     { url: `${SHOWDOWN}/koga.png`,     emoji: "☠️" },
+  sabrina:  { url: `${SHOWDOWN}/sabrina.png`,  emoji: "🔮" },
+  blaine:   { url: `${SHOWDOWN}/blaine.png`,   emoji: "🔥" },
+  giovanni: { url: `${SHOWDOWN}/giovanni.png`, emoji: "🦊" },
+};
+
+export const ROUTE_TRAINER_SPRITES: Record<string, string> = {
+  youngster:  `${SHOWDOWN}/youngster.png`,
+  lass:       `${SHOWDOWN}/lass.png`,
+  bugcatcher: `${SHOWDOWN}/bugcatcher.png`,
+  hiker:      `${SHOWDOWN}/hiker.png`,
+  camper:     `${SHOWDOWN}/camper.png`,
+  picnicker:  `${SHOWDOWN}/picnicker.png`,
 };
 
 export function getTrainerOption(id: string): TrainerOption {
@@ -35,16 +49,17 @@ export function getTrainerOption(id: string): TrainerOption {
 interface Props {
   url?: string;
   fallbackEmoji?: string;
-  size?: number;
+  size?: "sm" | "md" | "lg";
   alt?: string;
 }
 
-export default function TrainerSprite({ url, fallbackEmoji = "🧑", size = 96, alt = "trainer" }: Props) {
+export default function TrainerSprite({ url, fallbackEmoji = "🧑", size = "md", alt = "trainer" }: Props) {
   const [errored, setErrored] = useState(false);
   if (errored || !url) {
+    const px = size === "sm" ? 48 : size === "lg" ? 70 : 56;
     return (
       <span
-        style={{ fontSize: size * 0.7, lineHeight: 1, display: "inline-block" }}
+        style={{ fontSize: px, lineHeight: 1, display: "inline-block" }}
         role="img"
         aria-label={alt}
       >
@@ -52,21 +67,16 @@ export default function TrainerSprite({ url, fallbackEmoji = "🧑", size = 96, 
       </span>
     );
   }
+  const cls =
+    size === "sm" ? "trainer-sprite trainer-sprite-sm"
+      : size === "lg" ? "trainer-sprite trainer-sprite-lg"
+        : "trainer-sprite";
   return (
     <img
       src={url}
       alt={alt}
-      width={size}
-      height={size}
-      className="trainer-sprite"
+      className={cls}
       onError={() => setErrored(true)}
-      style={{
-        width: size,
-        height: size,
-        objectFit: "contain",
-        filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.35))",
-        userSelect: "none",
-      }}
       draggable={false}
     />
   );
