@@ -49,6 +49,46 @@ img.trainer-sprite {
 img.trainer-sprite-sm { width: 64px !important; height: 64px !important; }
 img.trainer-sprite-lg { width: 96px !important; height: 96px !important; }
 
+/* === Item sprites (PokeAPI inventory) === */
+img.item-sprite {
+  image-rendering: pixelated !important;
+  image-rendering: crisp-edges !important;
+  object-fit: contain !important;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.45));
+  display: inline-block;
+}
+
+/* === Attacker lunge / defender flash / arena hit === */
+@keyframes pq-lunge-right {
+  0%   { transform: translateX(0); }
+  60%  { transform: translateX(34px); }
+  100% { transform: translateX(0); }
+}
+@keyframes pq-lunge-left {
+  0%   { transform: translateX(0); }
+  60%  { transform: translateX(-34px); }
+  100% { transform: translateX(0); }
+}
+.pq-lunge-right { animation: pq-lunge-right 180ms ease-out !important; will-change: transform; }
+.pq-lunge-left  { animation: pq-lunge-left  180ms ease-out !important; will-change: transform; }
+
+@keyframes pq-flash-red {
+  0%, 100% { filter: none; }
+  20%, 60% { filter: brightness(1.4) sepia(1) saturate(8) hue-rotate(-25deg) drop-shadow(0 0 6px #ff3030); }
+}
+.pq-flash-red { animation: pq-flash-red 320ms ease-in-out; }
+.pq-flash-red img { filter: brightness(1.4) sepia(1) saturate(8) hue-rotate(-25deg) drop-shadow(0 0 6px #ff3030) !important; }
+
+@keyframes pq-arena-hit {
+  0%, 100% { transform: translate(0, 0); box-shadow: none; }
+  20%      { transform: translate(-3px, 2px); }
+  40%      { transform: translate(3px, -2px); }
+  60%      { transform: translate(-2px, -2px); }
+  80%      { transform: translate(2px, 2px); }
+  50%      { box-shadow: inset 0 0 60px rgba(255,80,80,0.30); }
+}
+.pq-arena-hit { animation: pq-arena-hit 260ms ease-in-out; }
+
 /* === Catch animation (rewritten, CSS-only) === */
 @keyframes throwBall {
   0% { transform: translate(0, 100px) rotate(0deg); opacity: 1; }

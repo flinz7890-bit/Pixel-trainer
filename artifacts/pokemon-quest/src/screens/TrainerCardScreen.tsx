@@ -2,12 +2,6 @@ import { useGame, xpToNext } from "@/game/state";
 import Toast from "@/components/Toast";
 import TrainerSprite, { getTrainerOption } from "@/components/TrainerSprite";
 
-function hashCode(s: string) {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h << 5) - h + s.charCodeAt(i);
-  return h | 0;
-}
-
 export default function TrainerCardScreen() {
   const { state, dispatch } = useGame();
   const team = state.team.slice(0, 6);
@@ -21,7 +15,7 @@ export default function TrainerCardScreen() {
   const nextRankAt = (rankIdx + 1) * 90;
   const rankPct = Math.min(100, (totalXp / nextRankAt) * 100);
 
-  const id = String(Math.abs(hashCode(state.trainerName || "T")) % 99999).padStart(5, "0");
+  const id = state.playerId || "TRN-—————";
   const startedDate = new Date().toLocaleDateString();
 
   return (
@@ -73,10 +67,11 @@ export default function TrainerCardScreen() {
 
           <div className="flex-1 min-w-0">
             <div
-              className="text-[10px] font-mono-pq tracking-[.3em] uppercase"
-              style={{ color: "#71717a" }}
+              className="text-[10px] font-mono-pq tracking-[.25em] uppercase"
+              style={{ color: "#22d3ee" }}
+              title="Your unique trainer ID"
             >
-              Trainer ID #{id}
+              ID · {id}
             </div>
             <div
               className="font-pixel text-[15px] mt-0.5 truncate"

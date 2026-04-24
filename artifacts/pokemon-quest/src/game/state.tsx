@@ -46,6 +46,7 @@ export interface GameState {
   screen: Screen;
   trainerName: string;
   trainerSpriteId: string;
+  playerId: string;
   money: number;
   pokeballs: number;
   potions: number;
@@ -70,6 +71,14 @@ const SAVE_KEY = "pokemon-quest-save-v1";
 
 function newUid() {
   return Math.random().toString(36).slice(2, 10);
+}
+
+export function newPlayerId() {
+  // TRN- + 5 char alphanumeric (no confusing 0/O/I/1)
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let id = "TRN-";
+  for (let i = 0; i < 5; i++) id += chars[Math.floor(Math.random() * chars.length)];
+  return id;
 }
 
 function randGender(): "M" | "F" {
@@ -106,6 +115,7 @@ const initialState: GameState = {
   screen: "welcome",
   trainerName: "",
   trainerSpriteId: "red",
+  playerId: "",
   money: 500,
   pokeballs: 5,
   potions: 2,
@@ -181,7 +191,8 @@ function reducer(state: GameState, action: Action): GameState {
     case "PICK_STARTER": {
       const p = makePokemon(action.speciesId, 5);
       const dex = { ...state.pokedex, [action.speciesId]: { seen: true, caught: true } };
-      return { ...state, team: [p], pokedex: dex };
+      const playerId = state.playerId || newPlayerId();
+      return { ...state, team: [p], pokedex: dex, playerId };
     }
     case "SET_LOCATION":
       return { ...state, locationId: action.id };
@@ -432,6 +443,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         commandLog: parsed.commandLog || [],
         items: parsed.items || { pokeball: parsed.pokeballs || 0, potion: parsed.potions || 0 },
         trainerSpriteId: parsed.trainerSpriteId || "red",
+        playerId: parsed.playerId || newPlayerId(),
         summaryUid: null,
       } as GameState;
       dispatch({ type: "LOAD", payload: merged });
@@ -448,10 +460,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "RESET" });
   };
 
-  // Auto-save when key state changes (skip welcome/menu/starter/active battle)
+  // Auto-save when key state changes (skip pre-game screens & active battle)
   useEffect(() => {
-    if (["welcome","menu","starter"].includes(state.screen)) return;
+    if (["welcome","menu","starter","trainerpick"].includes(state.screen)) return;
     if (state.battle) return;
+    // Critical guard: never overwrite a real save with an empty-team state
+    if (state.team.length === 0) return;
     try {
       const toSave = { ...state, battle: null, toast: null };
       localStorage.setItem(SAVE_KEY, JSON.stringify(toSave));

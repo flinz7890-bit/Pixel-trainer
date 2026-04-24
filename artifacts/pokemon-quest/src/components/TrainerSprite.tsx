@@ -46,6 +46,23 @@ export function getTrainerOption(id: string): TrainerOption {
   return TRAINERS.find((t) => t.id === id) || TRAINERS[0];
 }
 
+export function trainerTitleToSpriteKey(title: string): string | null {
+  const t = title.toLowerCase().replace(/[^a-z]/g, "");
+  if (t.includes("youngster")) return "youngster";
+  if (t.includes("lass")) return "lass";
+  if (t.includes("bug")) return "bugcatcher";
+  if (t.includes("hiker")) return "hiker";
+  if (t.includes("camper")) return "camper";
+  if (t.includes("picnicker")) return "picnicker";
+  return null;
+}
+
+export function spriteForRouteTrainer(label: string): string | null {
+  const m = label.match(/^([A-Za-z .]+)/);
+  const key = m ? trainerTitleToSpriteKey(m[1]) : null;
+  return key ? ROUTE_TRAINER_SPRITES[key] || null : null;
+}
+
 interface Props {
   url?: string;
   fallbackEmoji?: string;

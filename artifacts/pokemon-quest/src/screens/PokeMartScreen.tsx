@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useGame } from "@/game/state";
 import { LOCATIONS } from "@/game/data";
 import { ItemDef, itemsForLocation, tiersAvailableForLocation } from "@/game/items";
+import ItemIcon from "@/components/ItemIcon";
 import Toast from "@/components/Toast";
 
 const TIER_LABEL: Record<string, string> = { early: "Basic", mid: "Advanced", late: "Premium" };
@@ -68,8 +69,8 @@ export default function PokeMartScreen() {
           const cant = state.money < item.price;
           return (
             <div key={item.id} className="pq-card p-3 flex items-center gap-3">
-              <div className="text-3xl shrink-0 grid place-items-center rounded-xl" style={{ width: 44, height: 44, background: "rgba(255,255,255,0.05)" }}>
-                {item.icon}
+              <div className="shrink-0 grid place-items-center rounded-xl" style={{ width: 48, height: 48, background: "rgba(255,255,255,0.05)" }}>
+                <ItemIcon item={item} size={36} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-bold text-[13px] flex items-center gap-2">

@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useGame } from "@/game/state";
-import { LOCATIONS } from "@/game/data";
+import { LOCATIONS, SPECIES } from "@/game/data";
 import PokemonCard from "@/components/PokemonCard";
+import PokeSprite from "@/components/PokeSprite";
 import Toast from "@/components/Toast";
 
 export default function PokeCenterScreen() {
@@ -67,8 +68,21 @@ export default function PokeCenterScreen() {
         </div>
 
         <div className="p-4 flex items-start gap-3">
-          <div className="text-4xl" aria-hidden>
-            👩‍⚕️
+          <div
+            className="shrink-0 grid place-items-center rounded-xl pq-bob"
+            style={{
+              width: 72,
+              height: 72,
+              background: "radial-gradient(closest-side, rgba(244,114,182,0.30), transparent 70%)",
+              border: "1px solid rgba(244,114,182,0.40)",
+            }}
+            aria-label="Chansey"
+          >
+            {SPECIES[113] ? (
+              <PokeSprite species={SPECIES[113]} size={64} />
+            ) : (
+              <span style={{ fontSize: 36 }}>🥚</span>
+            )}
           </div>
           <div className="flex-1">
             <div

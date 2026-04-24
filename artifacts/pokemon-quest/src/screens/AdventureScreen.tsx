@@ -3,6 +3,7 @@ import { useGame, makePokemon, BattleState, isLocationCleared } from "@/game/sta
 import { GYMS, LOCATIONS, SPECIES, TrainerNPC } from "@/game/data";
 import PokemonCard from "@/components/PokemonCard";
 import Toast from "@/components/Toast";
+import TrainerSprite, { spriteForRouteTrainer } from "@/components/TrainerSprite";
 
 function pickEncounter(locId: string) {
   const loc = LOCATIONS.find((l) => l.id === locId)!;
@@ -292,27 +293,40 @@ export default function AdventureScreen() {
             <div className="text-[10px] font-mono-pq" style={{ color: "#facc15" }}>
               ⚔ TRAINER{remainingTrainers.length > 1 ? "S" : ""} ON THIS ROUTE
             </div>
-            {remainingTrainers.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => challengeTrainer(t)}
-                className="pq-card-2 flex items-center gap-3 p-2 text-left hover:brightness-110 transition"
-                style={{ borderColor: "rgba(250,204,21,0.40)" }}
-              >
-                <div className="text-2xl">{t.sprite}</div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[12px] font-bold truncate" style={{ color: "#facc15" }}>
-                    {t.title} {t.name}
+            {remainingTrainers.map((t) => {
+              const spriteUrl = spriteForRouteTrainer(`${t.title} ${t.name}`);
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => challengeTrainer(t)}
+                  className="pq-card-2 flex items-center gap-3 p-2 text-left hover:brightness-110 transition"
+                  style={{ borderColor: "rgba(250,204,21,0.40)" }}
+                >
+                  <div
+                    className="shrink-0 grid place-items-center rounded-lg"
+                    style={{
+                      width: 56,
+                      height: 56,
+                      background: "radial-gradient(closest-side, rgba(250,204,21,0.18), transparent 70%)",
+                      border: "1px solid rgba(250,204,21,0.30)",
+                    }}
+                  >
+                    <TrainerSprite url={spriteUrl || undefined} fallbackEmoji={t.sprite || "🧑"} size="sm" alt={t.title} />
                   </div>
-                  <div className="text-[10px] font-mono-pq" style={{ color: "#a1a1aa" }}>
-                    {t.team.length} Pokémon · ₽{t.reward}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[12px] font-bold truncate" style={{ color: "#facc15" }}>
+                      {t.title} {t.name}
+                    </div>
+                    <div className="text-[10px] font-mono-pq" style={{ color: "#a1a1aa" }}>
+                      {t.team.length} Pokémon · ₽{t.reward}
+                    </div>
                   </div>
-                </div>
-                <div className="text-[10px] font-mono-pq" style={{ color: "#facc15" }}>
-                  CHALLENGE ▶
-                </div>
-              </button>
-            ))}
+                  <div className="text-[10px] font-mono-pq" style={{ color: "#facc15" }}>
+                    CHALLENGE ▶
+                  </div>
+                </button>
+              );
+            })}
           </div>
         )}
 

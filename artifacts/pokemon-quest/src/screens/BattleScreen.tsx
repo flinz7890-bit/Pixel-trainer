@@ -4,8 +4,10 @@ import { useGame, speciesOf, OwnedPokemon, makePokemon } from "@/game/state";
 import { Move, SPECIES, GYMS, LOCATIONS, PokeType, effectiveness, effectivenessLabel } from "@/game/data";
 import { ITEMS as ITEM_DEFS, getItem } from "@/game/items";
 import Toast from "@/components/Toast";
+import ItemIcon from "@/components/ItemIcon";
 import { typeColor } from "@/components/TypeBadge";
-import TrainerSprite, { GYM_LEADER_SPRITES, ROUTE_TRAINER_SPRITES } from "@/components/TrainerSprite";
+
+const SPECIAL_TYPES = new Set<string>(["fire","water","electric","grass","psychic","ice","dragon","ghost","dark","fairy"]);
 
 // Move type → CSS animation name + duration (ms)
 const MOVE_ANIM: Record<string, { name: string; dur: number }> = {
@@ -28,17 +30,6 @@ const MOVE_ANIM: Record<string, { name: string; dur: number }> = {
   dark:     { name: "ghostAnim",    dur: 700 },
   fairy:    { name: "psychicAnim",  dur: 700 },
 };
-
-function trainerTitleToSpriteKey(title: string): string | null {
-  const t = title.toLowerCase().replace(/[^a-z]/g, "");
-  if (t.includes("youngster")) return "youngster";
-  if (t.includes("lass")) return "lass";
-  if (t.includes("bug")) return "bugcatcher";
-  if (t.includes("hiker")) return "hiker";
-  if (t.includes("camper")) return "camper";
-  if (t.includes("picnicker")) return "picnicker";
-  return null;
-}
 
 const POKEBALL_IMG: Record<string, string> = {
   pokeball:  "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png",
@@ -97,19 +88,34 @@ export default function BattleScreen() {
   const playerSpriteRef = useRef<HTMLDivElement>(null);
   const arenaRef = useRef<HTMLDivElement>(null);
 
-  const playMoveAnimation = (moveType: PokeType, attackerSide: "player" | "enemy") => {
-    return new Promise<void>((resolve) => {
-      const defenderEl = attackerSide === "player" ? enemySpriteRef.current : playerSpriteRef.current;
-      const cfg = MOVE_ANIM[moveType.toLowerCase()] || MOVE_ANIM.normal;
-      if (!defenderEl) { setTimeout(resolve, cfg.dur); return; }
+  const playMoveAnimation = async (moveType: PokeType, attackerSide: "player" | "enemy") => {
+    const attackerEl = attackerSide === "player" ? playerSpriteRef.current : enemySpriteRef.current;
+    const defenderEl = attackerSide === "player" ? enemySpriteRef.current : playerSpriteRef.current;
+    const cfg = MOVE_ANIM[moveType.toLowerCase()] || MOVE_ANIM.normal;
+    const isSpecial = SPECIAL_TYPES.has(moveType.toLowerCase());
+
+    // Phase 1: attacker lunges forward (~180ms)
+    if (attackerEl) {
+      attackerEl.classList.remove("pq-bob");
+      attackerEl.classList.add(attackerSide === "player" ? "pq-lunge-right" : "pq-lunge-left");
+      await new Promise<void>((r) => setTimeout(r, 180));
+      attackerEl.classList.remove("pq-lunge-right", "pq-lunge-left");
+      if (attackerSide === "player") attackerEl.classList.add("pq-bob");
+    }
+
+    // Phase 2: type FX overlay travels toward / hits the defender
+    if (defenderEl) {
       const fx = document.createElement("div");
       fx.className = "pq-move-fx";
       fx.style.top = "30%";
-      if (attackerSide === "player") {
-        fx.style.left = "-80px";
+      if (isSpecial) {
+        // Projectile-style: enter from attacker's side
+        if (attackerSide === "player") fx.style.left = "-90px";
+        else { fx.style.right = "-90px"; fx.style.transform = "scaleX(-1)"; }
       } else {
-        fx.style.right = "-80px";
-        fx.style.transform = "scaleX(-1)";
+        // Physical: contact-only, centered on defender
+        fx.style.left = "10%";
+        fx.style.right = "10%";
       }
       fx.style.animation = `${cfg.name} ${cfg.dur}ms ease-out forwards`;
       defenderEl.appendChild(fx);
@@ -117,8 +123,19 @@ export default function BattleScreen() {
         arenaRef.current.classList.add("pq-shake");
         setTimeout(() => arenaRef.current?.classList.remove("pq-shake"), cfg.dur);
       }
-      setTimeout(() => { fx.remove(); resolve(); }, cfg.dur + 30);
-    });
+      // Phase 3: impact — flash defender red + screen shake (just before FX ends)
+      const impactDelay = Math.max(0, cfg.dur - 200);
+      setTimeout(() => {
+        defenderEl.classList.add("pq-flash-red");
+        setTimeout(() => defenderEl.classList.remove("pq-flash-red"), 320);
+        if (arenaRef.current) {
+          arenaRef.current.classList.add("pq-arena-hit");
+          setTimeout(() => arenaRef.current?.classList.remove("pq-arena-hit"), 260);
+        }
+      }, impactDelay);
+      await new Promise<void>((r) => setTimeout(r, cfg.dur + 80));
+      fx.remove();
+    }
   };
 
   const showFloatingDamage = (side: "enemy" | "player", dmg: number, mult: number) => {
@@ -321,15 +338,15 @@ export default function BattleScreen() {
     await sleep(1200);
 
     if (success) {
-      // Sparkle + Gotcha!
+      // Sparkle + Gotcha! — KEEP enemyCapture true and ball visible through transition
+      // so the Pokémon never re-pops out of the ball before the battle ends.
       setThrowing({ ball: ballId, phase: "captured" });
       log([`Gotcha! ${enemySp.name} was caught!`]);
       dispatch({ type: "CATCH_POKEMON", speciesId: enemy.speciesId });
       dispatch({ type: "ADD_TO_TEAM", pokemon: { ...enemy } });
       dispatch({ type: "TOAST", text: `Caught ${enemySp.name}!` });
       await sleep(700);
-      setThrowing(null);
-      setEnemyCapture(false);
+      // Don't reset enemyCapture/throwing — endBattleAfter changes screen
       await endBattleAfter("caught");
     } else {
       // burstOpen — ball bursts and Pokémon reappears
@@ -451,30 +468,6 @@ export default function BattleScreen() {
             </div>
             <div className="wb-hp-num">{enemy.hp}/{enemy.maxHp}</div>
             <HpBar p={enemy} big />
-            {(() => {
-              if (battle.isGym && battle.gymId && GYM_LEADER_SPRITES[battle.gymId]) {
-                const g = GYM_LEADER_SPRITES[battle.gymId];
-                return (
-                  <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
-                    <TrainerSprite url={g.url} fallbackEmoji={g.emoji} size="sm" alt="gym leader" />
-                    <span className="wb-atk">{battle.trainerLabel || ""}</span>
-                  </div>
-                );
-              }
-              if (battle.isTrainer && battle.trainerLabel) {
-                const m = battle.trainerLabel.match(/^([A-Za-z .]+)/);
-                const key = m ? trainerTitleToSpriteKey(m[1]) : null;
-                if (key && ROUTE_TRAINER_SPRITES[key]) {
-                  return (
-                    <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
-                      <TrainerSprite url={ROUTE_TRAINER_SPRITES[key]} fallbackEmoji="🧑" size="sm" alt="trainer" />
-                      <span className="wb-atk">{battle.trainerLabel}</span>
-                    </div>
-                  );
-                }
-              }
-              return null;
-            })()}
           </div>
           <div ref={enemySpriteRef} className={`wb-enemy-sprite ${enemyShake ? "pq-shake" : ""}`} style={{ position: "relative" }}>
             <div className={enemyCapture ? "pq-shrink" : ""}>
@@ -641,7 +634,7 @@ export default function BattleScreen() {
                     onClick={() => onUseItem(it.id)}
                   >
                     <div className="wb-move-name flex items-center gap-2">
-                      <span style={{ fontSize: 16 }}>{it.icon}</span>
+                      <ItemIcon item={it} size={22} />
                       <span>{it.name}</span>
                     </div>
                     <div className="wb-move-pwr">×{have}{trainerLock ? " · trainer" : ""}</div>

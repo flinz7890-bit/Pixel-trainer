@@ -1,7 +1,20 @@
 import { useGame } from "@/game/state";
 
 export default function WelcomeScreen() {
-  const { dispatch } = useGame();
+  const { dispatch, loadGame, hasSave, resetGame } = useGame();
+  const canContinue = hasSave();
+
+  const onContinue = () => {
+    if (loadGame()) {
+      dispatch({ type: "SET_SCREEN", screen: "adventure" });
+    }
+  };
+
+  const onNewGame = () => {
+    resetGame();
+    dispatch({ type: "SET_SCREEN", screen: "trainerpick" });
+  };
+
   return (
     <div className="pq-fade flex flex-col items-center gap-10 py-16 relative">
       <div className="text-center">
@@ -38,15 +51,25 @@ export default function WelcomeScreen() {
         ⚪
       </div>
 
-      <div className="w-full max-w-xs">
+      <div className="w-full max-w-xs flex flex-col gap-3">
+        {canContinue && (
+          <button
+            className="pq-btn pq-btn-primary w-full pq-glow text-base"
+            onClick={onContinue}
+          >
+            ⏵ CONTINUE
+          </button>
+        )}
         <button
-          className="pq-btn pq-btn-primary w-full pq-glow text-base"
-          onClick={() => dispatch({ type: "SET_SCREEN", screen: "trainerpick" })}
+          className={`pq-btn ${canContinue ? "pq-btn-violet" : "pq-btn-primary pq-glow"} w-full text-base`}
+          onClick={onNewGame}
         >
-          ▶ START
+          ✦ NEW GAME
         </button>
-        <div className="text-center text-[11px] mt-3" style={{ color: "#71717a" }}>
-          Tap START to begin your journey
+        <div className="text-center text-[11px] mt-1" style={{ color: "#71717a" }}>
+          {canContinue
+            ? "Continue resumes your saved team & progress."
+            : "Tap NEW GAME to begin your journey"}
         </div>
       </div>
     </div>

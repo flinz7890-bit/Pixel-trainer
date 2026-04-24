@@ -1,0 +1,19 @@
+Fix and improve the following issues in the Pokémon Quest web app:
+1. Continue Game Bug
+When a player selects their character and presses "Continue," their Pokémon team is empty/missing. Pressing "New Game" works correctly. Fix the save/load system so that continuing a game properly restores the player's Pokémon team, inventory, badges, money, and current location from their saved data.
+2. Unique Player IDs
+Each player profile should be assigned a unique player ID (e.g., a UUID or random alphanumeric string like "TRN-4F92X") generated at account creation. Display this ID in the player profile/character select screen. This ID should persist and be tied to their save data.
+3. Trainer Sprite on Route Screen
+In the "TRAINER ON THIS ROUTE" section, replace the bug emoji 🪲 with the actual trainer's sprite image (the same walking trainer sprite used in battle). Do not show the trainer sprite inside the battle UI.
+4. Pokémon Center — Replace Doctor with Chansey
+In the Pokémon Center screen, replace the doctor/nurse image with an animated or static Chansey sprite (use the official Gen 1/2 style pixel sprite consistent with the rest of the game's art style).
+5. Poké Ball Catch Animation Lag
+After the catch animation completes, there is a noticeable lag before the game shows the "Successfully caught!" message, during which the Pokémon briefly re-appears or pops out of the ball visually. Fix the animation sequence so: (a) the ball shakes and clicks shut smoothly, (b) no Pokémon sprite reappears after the ball closes, and (c) the success message appears immediately after the final shake with no delay or visual glitch.
+6. Item Sprites in Bag & Poké Mart
+Replace all placeholder or emoji item icons in the Bag screen and Poké Mart store with the correct pixel sprite images from the PokéSprite inventory item sprite sheet at: https://img.pokemondb.net/sprites/items/ or the PokéSprite project (https://msikma.github.io/pokesprite/). Each item (Poké Ball, Great Ball, Potion, Super Potion, Antidote, etc.) should display its correct official Gen 3+ inventory sprite.
+7. Battle Move Animations
+Improve the move animations in battle. Currently they are too basic/instant. Implement the following:
+Physical moves (e.g., Scratch): Show the attacking Pokémon lunge forward toward the opponent, then return. Flash the defending Pokémon red on hit.
+Special/Fire moves (e.g., Ember): Show a projectile or flame particle effect traveling from the attacker to the defender. The defender should flash and shake on impact.
+Add a brief screen shake or flash effect on every hit.
+All animations should complete before the battle log updates with damage numbers.

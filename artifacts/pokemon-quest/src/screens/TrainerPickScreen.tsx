@@ -11,7 +11,8 @@ export default function TrainerPickScreen() {
     const trimmed = name.trim() || "Trainer";
     dispatch({ type: "SET_NAME", name: trimmed });
     dispatch({ type: "SET_TRAINER_SPRITE", id: selected });
-    dispatch({ type: "SET_SCREEN", screen: "menu" });
+    // New game flow: go straight to starter pick (Pokémon team is set there)
+    dispatch({ type: "SET_SCREEN", screen: "starter" });
   };
 
   return (
