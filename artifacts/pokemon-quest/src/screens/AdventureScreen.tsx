@@ -239,9 +239,16 @@ export default function AdventureScreen() {
           )}
           {state.team.map((p, i) => (
             <div key={p.uid} style={{ scrollSnapAlign: "start" }}>
-              <PokemonCard p={p} active={i === 0} compact />
+              <PokemonCard p={p} active={i === 0} compact showMenu index={i} total={state.team.length} />
             </div>
           ))}
+        </div>
+        {state.team.length > 1 && (
+          <div className="text-[9px] font-mono-pq text-center mt-1" style={{ color: "#71717a" }}>
+            Tap ⋯ on a card to view summary, set active, reorder, or release.
+          </div>
+        )}
+        <div style={{ display: "none" }}>
         </div>
       </div>
 

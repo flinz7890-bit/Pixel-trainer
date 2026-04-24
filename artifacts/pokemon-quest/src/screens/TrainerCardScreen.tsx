@@ -1,6 +1,6 @@
 import { useGame, xpToNext } from "@/game/state";
 import Toast from "@/components/Toast";
-import trainerGif from "@assets/dai420w-1ec74242-2aad-47a3-8cf3-6c6f0f7c297b_1776838730939.gif";
+import TrainerSprite, { getTrainerOption } from "@/components/TrainerSprite";
 
 function hashCode(s: string) {
   let h = 0;
@@ -63,16 +63,11 @@ export default function TrainerCardScreen() {
               boxShadow: "0 0 24px rgba(244,63,94,0.30), inset 0 0 0 1px rgba(255,255,255,0.04)",
             }}
           >
-            <img
-              src={trainerGif}
-              alt="trainer"
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "contain",
-                imageRendering: "pixelated",
-                filter: "drop-shadow(0 2px 0 rgba(0,0,0,0.30))",
-              }}
+            <TrainerSprite
+              url={getTrainerOption(state.trainerSpriteId).url}
+              fallbackEmoji={getTrainerOption(state.trainerSpriteId).emoji}
+              size={88}
+              alt={getTrainerOption(state.trainerSpriteId).name}
             />
           </div>
 

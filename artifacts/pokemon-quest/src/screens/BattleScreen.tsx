@@ -2,8 +2,15 @@ import PokeSprite from "@/components/PokeSprite";
 import { useEffect, useState } from "react";
 import { useGame, speciesOf, OwnedPokemon, makePokemon } from "@/game/state";
 import { Move, SPECIES, GYMS, LOCATIONS, PokeType, effectiveness, effectivenessLabel } from "@/game/data";
+import { ITEMS as ITEM_DEFS, getItem } from "@/game/items";
 import Toast from "@/components/Toast";
 import { typeColor } from "@/components/TypeBadge";
+
+const POKEBALL_IMG: Record<string, string> = {
+  pokeball:  "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png",
+  greatball: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/great-ball.png",
+  ultraball: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ultra-ball.png",
+};
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -50,6 +57,8 @@ export default function BattleScreen() {
   const [playerShake, setPlayerShake] = useState(false);
   const [menu, setMenu] = useState<"main" | "switch" | "bag">("main");
   const [turnNum, setTurnNum] = useState(1);
+  const [throwing, setThrowing] = useState<null | { ball: string; phase: "throw" | "wobble" | "burst" | "captured" }>(null);
+  const [enemyCapture, setEnemyCapture] = useState(false);
 
   const player = state.team[0];
   const battle = state.battle;
@@ -192,36 +201,91 @@ export default function BattleScreen() {
     await enemyTurn();
   };
 
-  const onCatch = async () => {
+  const throwBall = async (ballId: string) => {
     if (battle.busy || battle.outcome) return;
     if (battle.isGym || battle.isTrainer) {
       dispatch({ type: "TOAST", text: "You can't catch a Trainer's Pokémon!" });
       return;
     }
-    if (state.pokeballs <= 0) {
-      dispatch({ type: "TOAST", text: "No Pokéballs left!" });
+    const have = state.items[ballId] || (ballId === "pokeball" ? state.pokeballs : 0);
+    if (have <= 0) {
+      dispatch({ type: "TOAST", text: "None left!" });
       return;
     }
+    const ballDef = getItem(ballId);
+    const ballName = ballDef?.name || "Poké Ball";
+    const mult = ballDef?.catchMult || 1;
+
     setMenu("main");
     setBusy(true);
-    dispatch({ type: "SPEND_BALL" });
-    log([`You threw a Pokéball at ${enemySp.name}!`]);
+    if (ballId === "pokeball") dispatch({ type: "SPEND_BALL" });
+    else dispatch({ type: "BUY_ITEM", itemId: ballId, qty: -1, cost: 0 });
+    log([`You threw a ${ballName} at ${enemySp.name}!`]);
+
+    // Phase 1: throw arc
+    setThrowing({ ball: ballId, phase: "throw" });
+    await sleep(800);
+
+    // Phase 2: capture shrink
+    setEnemyCapture(true);
     await sleep(700);
+
+    // Phase 3: wobble
+    setThrowing({ ball: ballId, phase: "wobble" });
     const hpFactor = 1 - enemy.hp / enemy.maxHp;
-    const chance = Math.min(0.95, enemySp.catchRate * (0.4 + hpFactor * 0.85));
+    const chance = Math.min(0.95, enemySp.catchRate * mult * (0.4 + hpFactor * 0.85));
     const success = Math.random() < chance;
+    await sleep(1100);
+
     if (success) {
+      setThrowing({ ball: ballId, phase: "captured" });
       log([`Gotcha! ${enemySp.name} was caught!`]);
       dispatch({ type: "CATCH_POKEMON", speciesId: enemy.speciesId });
-      const captured = { ...enemy };
-      dispatch({ type: "ADD_TO_TEAM", pokemon: captured });
+      dispatch({ type: "ADD_TO_TEAM", pokemon: { ...enemy } });
       dispatch({ type: "TOAST", text: `Caught ${enemySp.name}!` });
+      await sleep(700);
+      setThrowing(null);
+      setEnemyCapture(false);
       await endBattleAfter("caught");
     } else {
-      log([`Oh no! The ${enemySp.name} broke free!`]);
+      setThrowing({ ball: ballId, phase: "burst" });
+      await sleep(360);
+      setThrowing(null);
+      setEnemyCapture(false);
+      log([`Oh no! ${enemySp.name} broke free!`]);
       dispatch({ type: "PATCH_BATTLE", patch: { turn: "enemy" } });
       await enemyTurn();
     }
+  };
+
+  const onCatch = () => throwBall("pokeball");
+
+  const onUseItem = async (itemId: string) => {
+    const def = getItem(itemId);
+    if (!def) return;
+    if (def.category === "ball") {
+      await throwBall(itemId);
+      return;
+    }
+    if (def.healAmount || def.fullHeal) {
+      if (player.hp >= player.maxHp && !def.curesStatus) {
+        dispatch({ type: "TOAST", text: "HP is already full." });
+        return;
+      }
+      const have = state.items[itemId] || 0;
+      if (have <= 0) { dispatch({ type: "TOAST", text: "None left!" }); return; }
+      setMenu("main");
+      setBusy(true);
+      const before = player.hp;
+      dispatch({ type: "USE_ITEM", itemId, targetUid: player.uid });
+      const heal = def.fullHeal ? player.maxHp - before : Math.min(player.maxHp - before, def.healAmount || 0);
+      log([`You used a ${def.name}!`, `${playerSp.name} recovered ${heal} HP.`]);
+      await sleep(700);
+      dispatch({ type: "PATCH_BATTLE", patch: { turn: "enemy" } });
+      await enemyTurn();
+      return;
+    }
+    dispatch({ type: "TOAST", text: `${def.name} can't be used in battle yet.` });
   };
 
   const onPotion = async () => {
@@ -303,8 +367,37 @@ export default function BattleScreen() {
             <div className="wb-hp-num">{enemy.hp}/{enemy.maxHp}</div>
             <HpBar p={enemy} big />
           </div>
-          <div className={`wb-enemy-sprite ${enemyShake ? "pq-shake" : ""}`}>
-            <PokeSprite species={enemySp} size={110} />
+          <div className={`wb-enemy-sprite ${enemyShake ? "pq-shake" : ""}`} style={{ position: "relative" }}>
+            <div className={enemyCapture ? "pq-capture" : ""}>
+              <PokeSprite species={enemySp} size={110} />
+            </div>
+            {throwing && (
+              <img
+                src={POKEBALL_IMG[throwing.ball] || POKEBALL_IMG.pokeball}
+                alt="ball"
+                className={
+                  throwing.phase === "throw" ? "pq-throw"
+                  : throwing.phase === "wobble" ? "pq-wobble"
+                  : throwing.phase === "burst" ? "pq-burst"
+                  : ""
+                }
+                style={{
+                  position: "absolute",
+                  left: "50%",
+                  bottom: throwing.phase === "throw" ? -40 : "30%",
+                  width: 36,
+                  height: 36,
+                  transform: "translateX(-50%)",
+                  imageRendering: "pixelated",
+                  filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.5))",
+                  zIndex: 5,
+                }}
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+              />
+            )}
+            {throwing?.phase === "captured" && (
+              <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", fontSize: 28, animation: "pokeball-burst 600ms ease-out" }}>✨</div>
+            )}
           </div>
         </div>
 
@@ -358,6 +451,13 @@ export default function BattleScreen() {
             <button
               className="wb-bottom-btn"
               disabled={battle.busy || !!battle.outcome}
+              onClick={() => setMenu("bag")}
+            >
+              Bag
+            </button>
+            <button
+              className="wb-bottom-btn"
+              disabled={battle.busy || !!battle.outcome}
               onClick={() => setMenu("switch")}
             >
               Switch
@@ -369,23 +469,7 @@ export default function BattleScreen() {
             >
               Run
             </button>
-            <button
-              className="wb-bottom-btn"
-              disabled={battle.busy || !!battle.outcome || !!battle.isGym || !!battle.isTrainer}
-              onClick={onCatch}
-            >
-              Pokeballs
-            </button>
           </div>
-          {state.potions > 0 && (
-            <button
-              className="wb-bottom-btn wb-potion-btn"
-              disabled={battle.busy || !!battle.outcome}
-              onClick={onPotion}
-            >
-              Use Potion ×{state.potions}
-            </button>
-          )}
         </>
       )}
 
@@ -425,6 +509,36 @@ export default function BattleScreen() {
                 </button>
               );
             })}
+          </div>
+          <button className="wb-bottom-btn" onClick={() => setMenu("main")}>← Back</button>
+        </>
+      )}
+
+      {menu === "bag" && (
+        <>
+          <div className="wb-section-label">BAG</div>
+          <div className="wb-moves" style={{ maxHeight: 320, overflowY: "auto" }}>
+            {ITEM_DEFS
+              .filter((it) => it.category === "ball" || it.category === "heal" || it.category === "revive")
+              .map((it) => {
+                const have = state.items[it.id] || (it.id === "pokeball" ? state.pokeballs : it.id === "potion" ? state.potions : 0);
+                const trainerLock = (it.category === "ball") && (battle.isGym || battle.isTrainer);
+                const disabled = have <= 0 || trainerLock || battle.busy;
+                return (
+                  <button
+                    key={it.id}
+                    className="wb-move-btn"
+                    disabled={disabled}
+                    onClick={() => onUseItem(it.id)}
+                  >
+                    <div className="wb-move-name flex items-center gap-2">
+                      <span style={{ fontSize: 16 }}>{it.icon}</span>
+                      <span>{it.name}</span>
+                    </div>
+                    <div className="wb-move-pwr">×{have}{trainerLock ? " · trainer" : ""}</div>
+                  </button>
+                );
+              })}
           </div>
           <button className="wb-bottom-btn" onClick={() => setMenu("main")}>← Back</button>
         </>

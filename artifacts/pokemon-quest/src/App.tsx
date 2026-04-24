@@ -6,6 +6,8 @@ import AdventureScreen from "@/screens/AdventureScreen";
 import BattleScreen from "@/screens/BattleScreen";
 import EncounterScreen from "@/screens/EncounterScreen";
 import TrainerCardScreen from "@/screens/TrainerCardScreen";
+import TrainerPickScreen from "@/screens/TrainerPickScreen";
+import SummaryScreen from "@/screens/SummaryScreen";
 import CommandBox from "@/components/CommandBox";
 import PokeCenterScreen from "@/screens/PokeCenterScreen";
 import PokeMartScreen from "@/screens/PokeMartScreen";
@@ -17,10 +19,12 @@ import { GameProvider, useGame } from "@/game/state";
 
 function ScreenRouter() {
   const { state } = useGame();
-  const showLog = !["welcome", "menu", "starter", "blackout"].includes(state.screen);
+  const showLog = !["welcome", "trainerpick", "menu", "starter", "blackout"].includes(state.screen);
   let screen;
   switch (state.screen) {
     case "welcome": screen = <WelcomeScreen />; break;
+    case "trainerpick": screen = <TrainerPickScreen />; break;
+    case "summary": screen = <SummaryScreen />; break;
     case "menu": screen = <HomeScreen />; break;
     case "starter": screen = <StarterScreen />; break;
     case "adventure": screen = <AdventureScreen />; break;

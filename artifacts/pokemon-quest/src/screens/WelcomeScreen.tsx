@@ -41,7 +41,7 @@ export default function WelcomeScreen() {
       <div className="w-full max-w-xs">
         <button
           className="pq-btn pq-btn-primary w-full pq-glow text-base"
-          onClick={() => dispatch({ type: "SET_SCREEN", screen: "menu" })}
+          onClick={() => dispatch({ type: "SET_SCREEN", screen: "trainerpick" })}
         >
           ▶ START
         </button>

@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useReducer, ReactNode } from "react";
 import { LOCATIONS, SPECIES, Species } from "./data";
+import { getItem } from "./items";
 
-export type Screen = "welcome" | "menu" | "starter" | "adventure" | "encounter" | "battle" | "blackout" | "center" | "mart" | "gym" | "pokedex" | "card" | "settings";
+export type Screen = "welcome" | "trainerpick" | "menu" | "starter" | "adventure" | "encounter" | "battle" | "blackout" | "center" | "mart" | "gym" | "pokedex" | "card" | "settings" | "summary";
 
 export interface OwnedPokemon {
   uid: string;
@@ -44,9 +45,11 @@ export interface RouteState {
 export interface GameState {
   screen: Screen;
   trainerName: string;
+  trainerSpriteId: string;
   money: number;
   pokeballs: number;
   potions: number;
+  items: Record<string, number>;
   badges: string[];
   team: OwnedPokemon[];
   storage: OwnedPokemon[];
@@ -60,6 +63,7 @@ export interface GameState {
   audioOn: boolean;
   commandLog: string[];
   wildEncounters: number;
+  summaryUid: string | null;
 }
 
 const SAVE_KEY = "pokemon-quest-save-v1";
@@ -101,9 +105,11 @@ export function isLocationCleared(locId: string, progress: Record<string, RouteS
 const initialState: GameState = {
   screen: "welcome",
   trainerName: "",
+  trainerSpriteId: "red",
   money: 500,
   pokeballs: 5,
   potions: 2,
+  items: { pokeball: 5, potion: 2 },
   badges: [],
   team: [],
   storage: [],
@@ -117,6 +123,7 @@ const initialState: GameState = {
   audioOn: true,
   commandLog: [],
   wildEncounters: 0,
+  summaryUid: null,
 };
 
 type Action =
@@ -139,6 +146,12 @@ type Action =
   | { type: "SPEND_BALL" }
   | { type: "SPEND_POTION" }
   | { type: "ADD_ITEM"; item: "ball" | "potion"; qty: number }
+  | { type: "BUY_ITEM"; itemId: string; qty: number; cost: number }
+  | { type: "USE_ITEM"; itemId: string; targetUid?: string }
+  | { type: "REORDER_TEAM"; uid: string; direction: "up" | "down" }
+  | { type: "RELEASE_POKEMON"; uid: string }
+  | { type: "SET_TRAINER_SPRITE"; id: string }
+  | { type: "OPEN_SUMMARY"; uid: string }
   | { type: "ADD_BADGE"; badge: string }
   | { type: "SEE_POKEMON"; speciesId: number }
   | { type: "CATCH_POKEMON"; speciesId: number }
@@ -233,10 +246,80 @@ function reducer(state: GameState, action: Action): GameState {
       return { ...state, pokeballs: Math.max(0, state.pokeballs - 1) };
     case "SPEND_POTION":
       return { ...state, potions: Math.max(0, state.potions - 1) };
-    case "ADD_ITEM":
+    case "ADD_ITEM": {
+      const itemId = action.item === "ball" ? "pokeball" : "potion";
+      const items = { ...state.items, [itemId]: (state.items[itemId] || 0) + action.qty };
       return action.item === "ball"
-        ? { ...state, pokeballs: state.pokeballs + action.qty }
-        : { ...state, potions: state.potions + action.qty };
+        ? { ...state, pokeballs: state.pokeballs + action.qty, items }
+        : { ...state, potions: state.potions + action.qty, items };
+    }
+    case "BUY_ITEM": {
+      if (state.money < action.cost) return state;
+      const items = { ...state.items, [action.itemId]: (state.items[action.itemId] || 0) + action.qty };
+      let pokeballs = state.pokeballs, potions = state.potions;
+      if (action.itemId === "pokeball") pokeballs += action.qty;
+      if (action.itemId === "potion") potions += action.qty;
+      return { ...state, items, pokeballs, potions, money: state.money - action.cost };
+    }
+    case "USE_ITEM": {
+      const def = getItem(action.itemId);
+      if (!def) return state;
+      const have = state.items[action.itemId] || 0;
+      if (have <= 0) return state;
+      let team = state.team;
+      const targetIdx = action.targetUid ? team.findIndex((p) => p.uid === action.targetUid) : 0;
+      if (targetIdx < 0) return state;
+      const target = { ...team[targetIdx] };
+
+      if (def.healAmount || def.fullHeal) {
+        if (target.hp <= 0 && !def.fullHeal) return state;
+        if (def.fullHeal) target.hp = target.maxHp;
+        else target.hp = Math.min(target.maxHp, target.hp + (def.healAmount || 0));
+      } else if (def.reviveHalf) {
+        if (target.hp > 0) return state;
+        target.hp = Math.max(1, Math.floor(target.maxHp / 2));
+      } else if (def.rareCandy) {
+        target.level += 1;
+        const sp = SPECIES[target.speciesId];
+        target.maxHp = Math.floor(sp.baseHp + target.level * 3);
+        target.atk = Math.floor(sp.baseAtk + target.level * 1.5);
+        target.hp = target.maxHp;
+        if (sp.evolvesAt && sp.evolvesTo && target.level >= sp.evolvesAt) {
+          target.speciesId = sp.evolvesTo;
+          const ns = SPECIES[sp.evolvesTo];
+          target.maxHp = Math.floor(ns.baseHp + target.level * 3);
+          target.atk = Math.floor(ns.baseAtk + target.level * 1.5);
+          target.hp = target.maxHp;
+        }
+      } else {
+        return state;
+      }
+
+      team = [...team];
+      team[targetIdx] = target;
+      const items = { ...state.items, [action.itemId]: have - 1 };
+      let potions = state.potions;
+      if (action.itemId === "potion") potions = Math.max(0, state.potions - 1);
+      return { ...state, team, items, potions };
+    }
+    case "REORDER_TEAM": {
+      const idx = state.team.findIndex((p) => p.uid === action.uid);
+      if (idx < 0) return state;
+      const target = action.direction === "up" ? idx - 1 : idx + 1;
+      if (target < 0 || target >= state.team.length) return state;
+      const team = [...state.team];
+      [team[idx], team[target]] = [team[target], team[idx]];
+      return { ...state, team };
+    }
+    case "RELEASE_POKEMON": {
+      if (state.team.length <= 1) return state;
+      const team = state.team.filter((p) => p.uid !== action.uid);
+      return { ...state, team };
+    }
+    case "SET_TRAINER_SPRITE":
+      return { ...state, trainerSpriteId: action.id };
+    case "OPEN_SUMMARY":
+      return { ...state, summaryUid: action.uid, screen: "summary" };
     case "ADD_BADGE":
       if (state.badges.includes(action.badge)) return state;
       return { ...state, badges: [...state.badges, action.badge] };
@@ -347,6 +430,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
         routeProgress: parsed.routeProgress || {},
         visited: parsed.visited || { pallet: true },
         commandLog: parsed.commandLog || [],
+        items: parsed.items || { pokeball: parsed.pokeballs || 0, potion: parsed.potions || 0 },
+        trainerSpriteId: parsed.trainerSpriteId || "red",
+        summaryUid: null,
       } as GameState;
       dispatch({ type: "LOAD", payload: merged });
       return true;
