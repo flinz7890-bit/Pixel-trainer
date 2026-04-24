@@ -158,6 +158,17 @@ export default function TrainerCardScreen() {
         ← Back
       </button>
 
+      <button
+        className="pq-btn pq-btn-ghost"
+        onClick={() => dispatch({ type: "SET_SCREEN", screen: "settings" })}
+        style={{
+          borderColor: "rgba(96,165,250,0.45)",
+          color: "#93c5fd",
+        }}
+      >
+        ⚙ Settings
+      </button>
+
       <span hidden>{xpToNext(1)}</span>
     </div>
   );

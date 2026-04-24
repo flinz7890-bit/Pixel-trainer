@@ -28,4 +28,11 @@ See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and pa
 
 ## Artifacts
 
-- **pokemon-quest** — Pokémon-style turn-based browser game (React + Vite). Single-page app, no backend. Save data persists to `localStorage` under key `pokemon-quest-save-v1`. Game systems live in `artifacts/pokemon-quest/src/game/` (`data.ts` species/moves/locations/gyms, `state.tsx` reducer + provider). Screens are in `src/screens/`.
+- **pokemon-quest** — Pokémon-style turn-based browser game (React + Vite). Save data persists to `localStorage` under key `pokemon-quest-save-v1`. Game systems live in `artifacts/pokemon-quest/src/game/` (`data.ts` species/moves/locations/gyms, `state.tsx` reducer + provider, `stats.ts` IV/EV/nature math, `rocketStory.ts` Team Rocket triggers). Screens are in `src/screens/`. Uses `api-server` for online PVP only.
+- **api-server** — Express 5 API at `/api`. Endpoints: `/healthz`, `/pvp/register`, `/pvp/players`, `/pvp/challenge*`, `/pvp/leaderboard`. PVP state is in-memory (resets on redeploy).
+
+## Pokémon Quest Features
+
+- **Stats**: Each owned Pokémon stores `nature` (25), `ivs` (0–31), `evs` (≤252/stat, ≤510 total), full stat block (def/spa/spd/spe). Battle damage uses physical/special split + STAB; EV gains on faint. Summary screen has Info/Stats/Moves/Bio tabs with stacked stat bars and nature ▲/▼ highlights.
+- **Team Rocket storyline**: Rocket grunts in Cerulean/Mt.Moon/Lavender/Fuchsia, Silph Co. Executive in Saffron, Giovanni rematch in Viridian (Persian L45, Dugtrio L42, Nidoqueen L44, Nidoking L45, Rhyhorn L43). 7 story triggers in `rocketStory.ts`. Rocket lines tagged `[Rocket]` in logs and rendered red by `CommandBox`.
+- **Online PVP**: AdventureScreen has PVP button (Settings moved to bottom of TrainerCard). PvpScreen has Lobby (challenge online players) / Battle (turn-based, 30s timer) / Leaderboard tabs. Polls `/api/pvp/*` every 5s.

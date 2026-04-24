@@ -15,6 +15,7 @@ import GymScreen from "@/screens/GymScreen";
 import PokedexScreen from "@/screens/PokedexScreen";
 import SettingsScreen from "@/screens/SettingsScreen";
 import BlackoutScreen from "@/screens/BlackoutScreen";
+import PvpScreen from "@/screens/PvpScreen";
 import { GameProvider, useGame } from "@/game/state";
 
 function ScreenRouter() {
@@ -37,6 +38,7 @@ function ScreenRouter() {
     case "pokedex": screen = <PokedexScreen />; break;
     case "settings": screen = <SettingsScreen />; break;
     case "blackout": screen = <BlackoutScreen />; break;
+    case "pvp": screen = <PvpScreen />; break;
     default: screen = <WelcomeScreen />;
   }
   return (

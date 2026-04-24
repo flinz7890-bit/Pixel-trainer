@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useGame, makePokemon, BattleState, isLocationCleared } from "@/game/state";
 import { GYMS, LOCATIONS, SPECIES, TrainerNPC } from "@/game/data";
+import { runRocketStoryFor } from "@/game/rocketStory";
 import PokemonCard from "@/components/PokemonCard";
 import Toast from "@/components/Toast";
 import TrainerSprite, { spriteForRouteTrainer } from "@/components/TrainerSprite";
@@ -71,7 +72,9 @@ export default function AdventureScreen() {
     } else if (!state.visited[loc.id]) {
       dispatch({ type: "MARK_VISITED", locationId: loc.id });
     }
-  }, [loc.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    // Trigger Team Rocket story beats (one-time per key)
+    runRocketStoryFor(state, dispatch);
+  }, [loc.id, state.badges.length, state.routeProgress[loc.id]?.cleared]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const explore = () => {
     if (inTown) {
@@ -119,12 +122,14 @@ export default function AdventureScreen() {
     const first = t.team[0];
     const enemy = makePokemon(first.speciesId, first.level);
     const rest = t.team.slice(1);
+    const introTagged = t.isRocket ? `[Rocket] ${t.intro}` : t.intro;
     const battle: BattleState = {
       enemy,
-      log: [`${t.title} ${t.name} wants to battle!`, t.intro, `${t.title} sent out ${SPECIES[first.speciesId].name}!`],
+      log: [`${t.title} ${t.name} wants to battle!`, introTagged, `${t.title} sent out ${SPECIES[first.speciesId].name}!`],
       busy: false,
       turn: "player",
       isTrainer: true,
+      isRocket: !!t.isRocket,
       trainerId: t.id,
       trainerLabel: `${t.title} ${t.name}`,
       reward: t.reward,
@@ -133,7 +138,10 @@ export default function AdventureScreen() {
     dispatch({ type: "SET_BATTLE", battle });
     dispatch({
       type: "LOG",
-      lines: [`${t.title} ${t.name} challenged you!`, `"${t.intro}"`],
+      lines: [
+        t.isRocket ? `[Rocket] ${t.title} ${t.name} challenged you!` : `${t.title} ${t.name} challenged you!`,
+        t.isRocket ? `[Rocket] "${t.intro}"` : `"${t.intro}"`,
+      ],
     });
     dispatch({ type: "SET_SCREEN", screen: "battle" });
   };
@@ -444,9 +452,9 @@ export default function AdventureScreen() {
           <span className="icon c-pink">⭐</span>
           <span className="label">Caught</span>
         </button>
-        <button className="hub-btn c-blue" onClick={() => goTo("settings")}>
-          <span className="icon c-blue">⚙</span>
-          <span className="label">Settings</span>
+        <button className="hub-btn c-blue" onClick={() => goTo("pvp")}>
+          <span className="icon c-blue">⚔</span>
+          <span className="label">PVP</span>
         </button>
         <button className="hub-btn c-gold" onClick={() => goTo("card")}>
           <span className="icon c-gold">👤</span>

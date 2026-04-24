@@ -6,6 +6,7 @@ import { ITEMS as ITEM_DEFS, getItem } from "@/game/items";
 import Toast from "@/components/Toast";
 import ItemIcon from "@/components/ItemIcon";
 import { typeColor } from "@/components/TypeBadge";
+import { isSpecialMove, evYieldOf } from "@/game/stats";
 
 const SPECIAL_TYPES = new Set<string>(["fire","water","electric","grass","psychic","ice","dragon","ghost","dark","fairy"]);
 
@@ -39,11 +40,19 @@ const POKEBALL_IMG: Record<string, string> = {
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-function calcDamage(attacker: OwnedPokemon, move: Move, defenderTypes: PokeType[]) {
-  const base = move.power + attacker.atk;
-  const variance = 0.85 + Math.random() * 0.3;
+function calcDamage(attacker: OwnedPokemon, defender: OwnedPokemon, move: Move, defenderTypes: PokeType[], attackerTypes: PokeType[]) {
+  // Standard Pokémon damage formula (simplified)
+  // ((((2 * Lv / 5 + 2) * Power * A / D) / 50) + 2) * STAB * Type * Variance
+  const isSpecial = isSpecialMove(move);
+  const A = isSpecial ? (attacker.spa ?? attacker.atk) : attacker.atk;
+  const D = isSpecial ? (defender.spd ?? defender.maxHp / 2) : (defender.def ?? defender.maxHp / 2);
+  const Dsafe = Math.max(1, D);
+  const lvFactor = (2 * attacker.level) / 5 + 2;
+  const inner = ((lvFactor * move.power * A) / Dsafe) / 50 + 2;
+  const stab = attackerTypes.includes(move.type) ? 1.5 : 1.0;
   const mult = effectiveness(move.type, defenderTypes);
-  const raw = base * variance * 0.6 * mult;
+  const variance = 0.85 + Math.random() * 0.15;
+  const raw = inner * stab * mult * variance;
   return { dmg: mult === 0 ? 0 : Math.max(1, Math.floor(raw)), mult };
 }
 
@@ -214,7 +223,7 @@ export default function BattleScreen() {
     log([`Foe ${enemySp.name} used ${move.name}!`]);
     // Play move animation BEFORE damage
     await playMoveAnimation(move.type, "enemy");
-    const { dmg, mult } = calcDamage(enemy, move, playerSp.type);
+    const { dmg, mult } = calcDamage(enemy, player, move, playerSp.type, enemySp.type);
     setPlayerShake(true);
     setTimeout(() => setPlayerShake(false), 500);
     showFloatingDamage("player", dmg, mult);
@@ -267,7 +276,8 @@ export default function BattleScreen() {
       const reward = battle.reward || 0;
       if (reward > 0) dispatch({ type: "ADD_MONEY", amount: reward });
       dispatch({ type: "MARK_TRAINER_DEFEATED", locationId: state.locationId, trainerId: battle.trainerId });
-      log([`You defeated ${battle.trainerLabel || "the Trainer"}!`, `You got ₽${reward} for winning!`]);
+      const tag = battle.isRocket ? "[Rocket] " : "";
+      log([`${tag}You defeated ${battle.trainerLabel || "the Trainer"}!`, `You got ₽${reward} for winning!`]);
       dispatch({ type: "TOAST", text: `Defeated ${battle.trainerLabel || "Trainer"}! +${reward}₽` });
     }
     await endBattleAfter("won");
@@ -279,7 +289,7 @@ export default function BattleScreen() {
     log([`${playerSp.name} used ${move.name}!`]);
     // Play move animation BEFORE damage applies
     await playMoveAnimation(move.type, "player");
-    const { dmg, mult } = calcDamage(player, move, enemySp.type);
+    const { dmg, mult } = calcDamage(player, enemy, move, enemySp.type, playerSp.type);
     setEnemyShake(true);
     setTimeout(() => setEnemyShake(false), 500);
     showFloatingDamage("enemy", dmg, mult);
@@ -292,6 +302,7 @@ export default function BattleScreen() {
       log([`Foe ${enemySp.name} fainted!`]);
       const xpGain = enemySp.xpYield + enemy.level * 2;
       dispatch({ type: "GIVE_XP", xp: xpGain });
+      dispatch({ type: "GAIN_EVS", yieldEVs: evYieldOf(enemySp) });
       log([`${playerSp.name} gained ${xpGain} XP!`]);
       await sleep(700);
       await handleNextEnemyOrEnd();

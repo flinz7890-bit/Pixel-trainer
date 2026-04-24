@@ -1,0 +1,198 @@
+I need three major features added to this Pokémon Quest game. 
+Implement all of them carefully without breaking existing systems.
+
+═══════════════════════════════════════════
+FEATURE 1 — POKÉMON INDIVIDUAL STATS SYSTEM
+═══════════════════════════════════════════
+
+Every Pokémon when caught or received as starter must permanently 
+have these unique generated values saved to their data:
+
+NATURE SYSTEM:
+- Randomly assign one of 25 natures on catch/receive
+- Each nature boosts one stat +10% and lowers another -10%
+- Neutral natures (Hardy, Docile, Serious, Bashful, Quirky) have no effect
+- Nature list: Hardy, Lonely, Brave, Adamant, Naughty, Bold, Docile, 
+  Relaxed, Impish, Lax, Timid, Hasty, Serious, Jolly, Naive, Modest, 
+  Mild, Quiet, Bashful, Rash, Calm, Gentle, Sassy, Careful, Quirky
+- Nature effect table:
+  Lonely/Brave/Adamant/Naughty = +Atk | Lonely -Def, Brave -Spd, 
+  Adamant -SpAtk, Naughty -SpDef
+  Bold/Relaxed/Impish/Lax = +Def | Bold -Atk, Relaxed -Spd, 
+  Impish -SpAtk, Lax -SpDef
+  Timid/Hasty/Jolly/Naive = +Spd | Timid -Atk, Hasty -Def, 
+  Jolly -SpAtk, Naive -SpDef
+  Modest/Mild/Quiet/Rash = +SpAtk | Modest -Atk, Mild -Def, 
+  Quiet -Spd, Rash -SpDef
+  Calm/Gentle/Sassy/Careful = +SpDef | Calm -Atk, Gentle -Def, 
+  Sassy -Spd, Careful -SpAtk
+
+IV SYSTEM:
+- Generate 6 random values (0-31) for HP, Atk, Def, SpAtk, SpDef, Spd
+- IVs are fixed forever after generation, never change
+- Save IVs to the Pokémon's permanent data object
+
+EV SYSTEM:
+- All EVs start at 0
+- When a Pokémon wins a battle, it gains EVs based on the defeated 
+  Pokémon's yield (use official EV yield values)
+- Max 252 EVs per stat, max 510 total EVs
+- EVs are saved permanently per Pokémon
+
+STAT CALCULATION FORMULA:
+- HP = floor(((2*Base + IV + floor(EV/4)) * Level / 100) + Level + 10)
+- Other stats = floor((floor(((2*Base + IV + floor(EV/4)) * Level/100) 
+  + 5) * NatureMultiplier))
+- NatureMultiplier = 1.1 if boosted, 0.9 if reduced, 1.0 if neutral
+- All battle damage calculations must use these computed stats
+
+DETAILED SUMMARY PAGE:
+Every Pokémon must have a full summary screen showing:
+- Sprite, name, types, level, nature label
+- Stat bars for HP/Atk/Def/SpAtk/SpDef/Spd showing calculated value
+- Each stat bar shows: Base | IV value | EV value
+- Nature effect highlighted: green text for boosted stat, red for reduced
+- Moves section with tabs: Level Up | TM/HM | Egg | Tutor
+- Each move shows name, type badge, PP, power, accuracy
+- Abilities section with name + full description, hidden ability marked
+- Evolution chain indicator showing current stage
+- Height, Weight, Pokédex ID, Base Experience, Gender
+- This summary is accessible from the team card (tap ··· menu) 
+  AND from the DEX page for caught Pokémon
+- For unseen Pokémon in DEX show only base stats, no IVs/EVs
+
+═══════════════════════════════════════════
+FEATURE 2 — TEAM ROCKET CONSPIRACY STORYLINE
+═══════════════════════════════════════════
+
+Add a Team Rocket storyline that unfolds across Kanto through 
+the command log and special trainer encounters.
+
+ROCKET GRUNT TRAINER TYPE:
+- Add "Team Rocket Grunt" as a trainer class with R uniform sprite
+- Their Pokémon pool: Koffing, Zubat, Rattata, Ekans, Drowzee, Grimer
+- Pre-battle dialogue: "Prepare for trouble! Hand over your Pokémon!"
+- Post-loss dialogue: "Team Rocket never forgets a face, twerp!"
+- Reward money: 1.5x normal trainer payout
+- Rocket event text always appears in red color (#ff4444) in command log
+
+STORY TRIGGER POINTS (trigger once, save to gameState):
+- Route 3 cleared:
+  "⚠ A figure in black watches from the shadows... 
+   a red R glints on their uniform."
+
+- Arriving Cerulean City:
+  "⚠ TEAM ROCKET ALERT: Grunts were spotted stealing Pokémon 
+   from trainers near Nugget Bridge. The city is on edge."
+  → Spawn 1 Rocket Grunt on Nugget Bridge as mandatory encounter
+
+- Arriving Mt. Moon:
+  "⚠ Team Rocket is excavating Mt. Moon illegally, stealing 
+   rare Fossils to sell on the black market."
+  → Add 2 Rocket Grunts inside Mt. Moon
+
+- Arriving Lavender Town:
+  "⚠ Team Rocket has seized Pokémon Tower. They are silencing 
+   the spirits of the dead to find the secret of Marowak."
+  → Add Rocket Grunt blocking the tower entrance
+
+- After beating Koga:
+  "⚠ Intercepted Rocket memo: 'Operation Silph is a go. 
+   Saffron falls tonight. Giovanni sends his regards.'"
+
+- Arriving Saffron City:
+  "⚠ Silph Co. has been taken over by Team Rocket. 
+   Citizens are being held hostage inside."
+  → Add special trainer "Rocket Executive" with stronger team:
+    Arbok Lv28, Hypno Lv26, Golbat Lv28
+  → After beating Executive: 
+    "The Silph Co. President is freed. But Giovanni vanishes 
+     through a hidden door leaving a note:
+     'Kanto was merely a test. The real operation spans every 
+      region. We will rise again — in Johto, Hoenn, and beyond.'"
+
+- After beating Elite Four + Champion:
+  "⚠ TRANSMISSION INTERCEPTED — SOURCE: UNKNOWN REGION
+   'Operative report: Kanto branch dissolved. Johto sleeper 
+    cells activating. The new world begins.'
+   — JOHTO REGION UNLOCKED —"
+  → Unlock Johto region in the world map
+
+GIOVANNI BOSS BATTLE:
+- Add Giovanni as a special trainer in Viridian Gym (after 7 badges)
+- Team: Persian Lv45, Dugtrio Lv42, Nidoqueen Lv44, 
+  Nidoking Lv45, Rhyhorn Lv43
+- Pre-battle: "So you've disrupted my plans across all of Kanto. 
+  Impressive... but it ends here."
+- Post-loss: "Impossible... I am Giovanni, the Team Rocket Boss! 
+  This changes nothing. Rocket will rise again."
+
+═══════════════════════════════════════════
+FEATURE 3 — ONLINE PVP BATTLE SYSTEM
+═══════════════════════════════════════════
+
+Replace the SETTINGS button on the route screen with a PVP button.
+Move Settings to the bottom of the TRAINER profile page instead.
+
+PVP LOBBY SCREEN (opens on PVP button tap):
+- Show current player's Trainer ID prominently at top
+- Text input field: "Enter opponent's Trainer ID"
+- "⚔ Send Challenge" button
+- Section below: "Incoming Challenges" — list of pending requests
+- Each incoming challenge shows: "[TrainerName] wants to battle! 
+  [Accept ✓] [Decline ✗]"
+- Poll server every 5 seconds for new incoming challenges
+
+CHALLENGE SYSTEM:
+- On send: save to database/backend:
+  { id: uuid, from: senderID, fromName: senderName, to: targetID, 
+    status: "pending", timestamp: Date.now() }
+- Target player sees a pop-up notification banner sliding in from 
+  top of screen: "⚔ [TrainerName] challenges you to a battle!"
+  with Accept and Decline buttons
+- If declined: challenger sees "Your challenge was declined."
+- If accepted: both players enter PVP battle screen
+
+PVP BATTLE SCREEN:
+- Both players use their current saved team (up to 6 Pokémon)
+- Turn-based: each player selects a move simultaneously
+- 30 second timer per turn — if timer runs out auto-select first move
+- Show timer countdown bar on screen
+- Moves resolve after both players submit:
+  Higher Speed attacks first
+  If equal speed, randomize who goes first
+- All damage uses the full IV/EV/Nature stat calculation from Feature 1
+- Show live battle log in command log style with both players' actions
+- If a Pokémon faints, player must switch to next available Pokémon
+- Battle ends when one player has no Pokémon remaining
+
+PVP RESULTS SCREEN:
+- Show Winner / Loser banner
+- Winner earns ₽ = opponent's badge count × 150
+- Show each player's remaining Pokémon HP
+- "Rematch" button sends a new challenge automatically
+- "Return to Map" button
+- PVP battles do NOT consume items or cause permanent HP loss 
+  (teams are fully restored after PVP battle ends)
+
+LEADERBOARD (add tab inside PVP screen):
+- Track wins/losses per Trainer ID
+- Show top 10 trainers by win count
+- Show current player's rank
+- Update after every completed PVP battle
+
+═══════════════════════════════════════════
+GENERAL RULES FOR IMPLEMENTATION
+═══════════════════════════════════════════
+
+- Do not break any existing battle, hunt, shop, or gym systems
+- All new Pokémon data (IVs, EVs, Nature) must be saved to the 
+  same storage system already used by the game
+- Rocket story events must only trigger once and be saved to 
+  gameState so they don't repeat on page refresh
+- PVP battles must not affect the player's Pokémon HP/PP 
+  outside of the PVP session
+- All new UI must match the existing dark theme with the same 
+  font and card style already used in the game
+- Test that existing routes, gyms, battles, and hunt all still 
+  work after changes

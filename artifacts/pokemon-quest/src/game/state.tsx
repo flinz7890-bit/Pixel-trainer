@@ -1,8 +1,16 @@
 import { createContext, useContext, useEffect, useReducer, ReactNode } from "react";
 import { LOCATIONS, SPECIES, Species } from "./data";
 import { getItem } from "./items";
+import {
+  StatBlock,
+  generateIVs,
+  emptyEVs,
+  randomNatureName,
+  computeAllStats,
+  addEVs,
+} from "./stats";
 
-export type Screen = "welcome" | "trainerpick" | "menu" | "starter" | "adventure" | "encounter" | "battle" | "blackout" | "center" | "mart" | "gym" | "pokedex" | "card" | "settings" | "summary";
+export type Screen = "welcome" | "trainerpick" | "menu" | "starter" | "adventure" | "encounter" | "battle" | "blackout" | "center" | "mart" | "gym" | "pokedex" | "card" | "settings" | "summary" | "pvp";
 
 export interface OwnedPokemon {
   uid: string;
@@ -13,6 +21,14 @@ export interface OwnedPokemon {
   hp: number;
   maxHp: number;
   atk: number;
+  // Legacy + new full stat block
+  def?: number;
+  spa?: number;
+  spd?: number;
+  spe?: number;
+  ivs?: StatBlock;
+  evs?: StatBlock;
+  nature?: string;
   gender: "M" | "F";
 }
 
@@ -27,6 +43,7 @@ export interface BattleState {
   isTrainer?: boolean;
   trainerId?: string;
   trainerLabel?: string;
+  isRocket?: boolean;
   reward?: number;
   enemyTeamRemaining?: { speciesId: number; level: number }[];
 }
@@ -65,6 +82,9 @@ export interface GameState {
   commandLog: string[];
   wildEncounters: number;
   summaryUid: string | null;
+  rocketFlags: Record<string, boolean>;
+  pvpWins: number;
+  pvpLosses: number;
 }
 
 const SAVE_KEY = "pokemon-quest-save-v1";
@@ -89,11 +109,43 @@ export function xpToNext(level: number) {
   return 20 + level * 15;
 }
 
+function applyStats(p: OwnedPokemon): OwnedPokemon {
+  const sp = SPECIES[p.speciesId];
+  const ivs = p.ivs || generateIVs();
+  const evs = p.evs || emptyEVs();
+  const nature = p.nature || randomNatureName();
+  const stats = computeAllStats(sp, p.level, ivs, evs, nature);
+  return {
+    ...p,
+    ivs, evs, nature,
+    maxHp: stats.hp,
+    atk: stats.atk,
+    def: stats.def,
+    spa: stats.spa,
+    spd: stats.spd,
+    spe: stats.spe,
+  };
+}
+
 export function makePokemon(speciesId: number, level: number): OwnedPokemon {
+  const ivs = generateIVs();
+  const evs = emptyEVs();
+  const nature = randomNatureName();
   const sp = SPECIES[speciesId];
-  const maxHp = Math.floor(sp.baseHp + level * 3);
-  const atk = Math.floor(sp.baseAtk + level * 1.5);
-  return { uid: newUid(), speciesId, level, xp: 0, hp: maxHp, maxHp, atk, gender: randGender() };
+  const stats = computeAllStats(sp, level, ivs, evs, nature);
+  return {
+    uid: newUid(),
+    speciesId, level, xp: 0,
+    hp: stats.hp,
+    maxHp: stats.hp,
+    atk: stats.atk,
+    def: stats.def,
+    spa: stats.spa,
+    spd: stats.spd,
+    spe: stats.spe,
+    ivs, evs, nature,
+    gender: randGender(),
+  };
 }
 
 export function speciesOf(p: OwnedPokemon): Species {
@@ -134,6 +186,9 @@ const initialState: GameState = {
   commandLog: [],
   wildEncounters: 0,
   summaryUid: null,
+  rocketFlags: {},
+  pvpWins: 0,
+  pvpLosses: 0,
 };
 
 type Action =
@@ -148,6 +203,7 @@ type Action =
   | { type: "PATCH_PLAYER_ACTIVE"; patch: Partial<OwnedPokemon> }
   | { type: "ADD_LOG"; lines: string[] }
   | { type: "GIVE_XP"; xp: number }
+  | { type: "GAIN_EVS"; yieldEVs: Partial<StatBlock> }
   | { type: "EVOLVE_ACTIVE"; toSpeciesId: number }
   | { type: "ADD_TO_TEAM"; pokemon: OwnedPokemon }
   | { type: "HEAL_ALL" }
@@ -175,6 +231,9 @@ type Action =
   | { type: "MARK_EXPLORED"; locationId: string }
   | { type: "MARK_CLEARED"; locationId: string }
   | { type: "MARK_VISITED"; locationId: string }
+  | { type: "SET_ROCKET_FLAG"; key: string }
+  | { type: "INC_PVP_WIN" }
+  | { type: "INC_PVP_LOSS" }
   | { type: "INC_HUNT" }
   | { type: "RESPAWN_AT_HEAL" };
 
@@ -213,27 +272,33 @@ function reducer(state: GameState, action: Action): GameState {
     case "GIVE_XP": {
       if (state.team.length === 0) return state;
       const team = [...state.team];
-      const p = { ...team[0] };
+      let p = { ...team[0] };
       p.xp += action.xp;
       while (p.xp >= xpToNext(p.level)) {
         p.xp -= xpToNext(p.level);
         p.level += 1;
-        const sp = SPECIES[p.speciesId];
-        p.maxHp = Math.floor(sp.baseHp + p.level * 3);
-        p.atk = Math.floor(sp.baseAtk + p.level * 1.5);
-        p.hp = p.maxHp;
+        const oldMax = p.maxHp;
+        p = applyStats(p);
+        // heal up by the gained max-hp delta
+        p.hp = Math.min(p.maxHp, p.hp + (p.maxHp - oldMax));
       }
+      team[0] = p;
+      return { ...state, team };
+    }
+    case "GAIN_EVS": {
+      if (state.team.length === 0) return state;
+      const team = [...state.team];
+      let p = { ...team[0] };
+      p.evs = addEVs(p.evs || emptyEVs(), action.yieldEVs);
+      p = applyStats(p);
       team[0] = p;
       return { ...state, team };
     }
     case "EVOLVE_ACTIVE": {
       if (state.team.length === 0) return state;
       const team = [...state.team];
-      const p = { ...team[0] };
-      p.speciesId = action.toSpeciesId;
-      const sp = SPECIES[action.toSpeciesId];
-      p.maxHp = Math.floor(sp.baseHp + p.level * 3);
-      p.atk = Math.floor(sp.baseAtk + p.level * 1.5);
+      let p = { ...team[0], speciesId: action.toSpeciesId };
+      p = applyStats(p);
       p.hp = p.maxHp;
       team[0] = p;
       const dex = { ...state.pokedex, [action.toSpeciesId]: { seen: true, caught: true } };
@@ -280,7 +345,7 @@ function reducer(state: GameState, action: Action): GameState {
       let team = state.team;
       const targetIdx = action.targetUid ? team.findIndex((p) => p.uid === action.targetUid) : 0;
       if (targetIdx < 0) return state;
-      const target = { ...team[targetIdx] };
+      let target = { ...team[targetIdx] };
 
       if (def.healAmount || def.fullHeal) {
         if (target.hp <= 0 && !def.fullHeal) return state;
@@ -291,15 +356,12 @@ function reducer(state: GameState, action: Action): GameState {
         target.hp = Math.max(1, Math.floor(target.maxHp / 2));
       } else if (def.rareCandy) {
         target.level += 1;
-        const sp = SPECIES[target.speciesId];
-        target.maxHp = Math.floor(sp.baseHp + target.level * 3);
-        target.atk = Math.floor(sp.baseAtk + target.level * 1.5);
+        target = applyStats(target);
         target.hp = target.maxHp;
+        const sp = SPECIES[target.speciesId];
         if (sp.evolvesAt && sp.evolvesTo && target.level >= sp.evolvesAt) {
           target.speciesId = sp.evolvesTo;
-          const ns = SPECIES[sp.evolvesTo];
-          target.maxHp = Math.floor(ns.baseHp + target.level * 3);
-          target.atk = Math.floor(ns.baseAtk + target.level * 1.5);
+          target = applyStats(target);
           target.hp = target.maxHp;
         }
       } else {
@@ -386,6 +448,13 @@ function reducer(state: GameState, action: Action): GameState {
     }
     case "MARK_VISITED":
       return { ...state, visited: { ...state.visited, [action.locationId]: true } };
+    case "SET_ROCKET_FLAG":
+      if (state.rocketFlags[action.key]) return state;
+      return { ...state, rocketFlags: { ...state.rocketFlags, [action.key]: true } };
+    case "INC_PVP_WIN":
+      return { ...state, pvpWins: (state.pvpWins || 0) + 1 };
+    case "INC_PVP_LOSS":
+      return { ...state, pvpLosses: (state.pvpLosses || 0) + 1 };
     case "INC_HUNT":
       return { ...state, wildEncounters: (state.wildEncounters || 0) + 1 };
     case "RESPAWN_AT_HEAL": {
@@ -408,6 +477,16 @@ interface Ctx {
 
 const GameContext = createContext<Ctx | null>(null);
 
+function migratePokemon(p: OwnedPokemon): OwnedPokemon {
+  if (p.ivs && p.evs && p.nature && typeof p.def === "number") return p;
+  return applyStats({
+    ...p,
+    ivs: p.ivs || generateIVs(),
+    evs: p.evs || emptyEVs(),
+    nature: p.nature || randomNatureName(),
+  });
+}
+
 export function GameProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
@@ -423,8 +502,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const raw = localStorage.getItem(SAVE_KEY);
       if (!raw) return false;
       const parsed = JSON.parse(raw) as Partial<GameState>;
-      const team = (parsed.team || []).map((p) => ({ ...p, gender: p.gender || randGender() }));
-      const storage = (parsed.storage || []).map((p) => ({ ...p, gender: p.gender || randGender() }));
+      const team = (parsed.team || []).map((p) => migratePokemon({ ...p, gender: p.gender || randGender() }));
+      const storage = (parsed.storage || []).map((p) => migratePokemon({ ...p, gender: p.gender || randGender() }));
       // Migrate locationId — if old id no longer exists, fall back to pallet
       const validLoc = LOCATIONS.some((l) => l.id === parsed.locationId);
       const locationId = validLoc ? parsed.locationId! : "pallet";
@@ -444,6 +523,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
         items: parsed.items || { pokeball: parsed.pokeballs || 0, potion: parsed.potions || 0 },
         trainerSpriteId: parsed.trainerSpriteId || "red",
         playerId: parsed.playerId || newPlayerId(),
+        rocketFlags: parsed.rocketFlags || {},
+        pvpWins: parsed.pvpWins || 0,
+        pvpLosses: parsed.pvpLosses || 0,
         summaryUid: null,
       } as GameState;
       dispatch({ type: "LOAD", payload: merged });
@@ -470,7 +552,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const toSave = { ...state, battle: null, toast: null };
       localStorage.setItem(SAVE_KEY, JSON.stringify(toSave));
     } catch { /* ignore */ }
-  }, [state.team, state.money, state.pokeballs, state.potions, state.badges, state.locationId, state.pokedex, state.screen, state.lastHealLocationId, state.routeProgress, state.visited]);
+  }, [state.team, state.money, state.pokeballs, state.potions, state.badges, state.locationId, state.pokedex, state.screen, state.lastHealLocationId, state.routeProgress, state.visited, state.rocketFlags, state.pvpWins, state.pvpLosses]);
 
   // Auto clear toast
   useEffect(() => {

@@ -318,7 +318,9 @@ export interface TrainerNPC {
   team: { speciesId: number; level: number }[];
   reward: number;
   intro: string;
+  postLoss?: string;
   requiresPrevTrainerId?: string;
+  isRocket?: boolean;
 }
 
 export interface Location {
@@ -358,13 +360,32 @@ export const LOCATIONS: Location[] = [
 
   { id: "route3", name: "Route 3", emoji: "⛰️", encounters: [enc(21,4,6,9), enc(39,2,6,8), enc(56,3,6,9), enc(74,2,6,9)],
     trainers: [{ id: "r3-hiker", title: "Hiker", name: "Marty", sprite: "🥾", team: [{speciesId:74,level:8},{speciesId:74,level:9}], reward: 220, intro: "These mountains are mine! Battle!" }],
-    prevLocationId: "pewter", nextLocationId: "route4" },
+    prevLocationId: "pewter", nextLocationId: "mtmoon" },
+
+  { id: "mtmoon", name: "Mt. Moon", emoji: "🌑", encounters: [enc(41,5,7,10), enc(74,3,7,10), enc(35,2,7,9)],
+    trainers: [
+      { id: "mm-rocket1", title: "Team Rocket Grunt", name: "R", sprite: "🅁", isRocket: true,
+        team: [{speciesId:19,level:9},{speciesId:23,level:9}], reward: 540,
+        intro: "Prepare for trouble! Hand over your Pokémon!",
+        postLoss: "Team Rocket never forgets a face, twerp!" },
+      { id: "mm-rocket2", title: "Team Rocket Grunt", name: "R", sprite: "🅁", isRocket: true,
+        team: [{speciesId:41,level:10},{speciesId:109,level:10}], reward: 540,
+        intro: "Prepare for trouble! Hand over your Pokémon!",
+        postLoss: "Team Rocket never forgets a face, twerp!" },
+    ],
+    prevLocationId: "route3", nextLocationId: "route4" },
 
   { id: "route4", name: "Route 4", emoji: "🏜️", encounters: [enc(21,3,8,11), enc(23,3,8,11), enc(27,3,8,11), enc(129,2,5,10)],
     trainers: [{ id: "r4-lass", title: "Lass", name: "Iris", sprite: "👧", team: [{speciesId:23,level:10}], reward: 200, intro: "I'll show you what I've got!" }],
-    prevLocationId: "route3", nextLocationId: "cerulean" },
+    prevLocationId: "mtmoon", nextLocationId: "cerulean" },
 
   { id: "cerulean", name: "Cerulean City", emoji: "💧", isTown: true, gymId: "misty", encounters: [],
+    trainers: [
+      { id: "ce-rocket-bridge", title: "Team Rocket Grunt", name: "R", sprite: "🅁", isRocket: true,
+        team: [{speciesId:88,level:13},{speciesId:19,level:12}], reward: 720,
+        intro: "Prepare for trouble! Hand over your Pokémon!",
+        postLoss: "Team Rocket never forgets a face, twerp!" },
+    ],
     prevLocationId: "route4", nextLocationId: "route5" },
 
   { id: "route5", name: "Route 5", emoji: "🛤️", encounters: [enc(16,3,10,13), enc(52,3,10,13), enc(56,2,10,13), enc(63,2,10,13)],
@@ -387,6 +408,12 @@ export const LOCATIONS: Location[] = [
     prevLocationId: "route7", nextLocationId: "lavender" },
 
   { id: "lavender", name: "Lavender Town", emoji: "🪦", isTown: true, encounters: [],
+    trainers: [
+      { id: "lav-rocket-tower", title: "Team Rocket Grunt", name: "R", sprite: "🅁", isRocket: true,
+        team: [{speciesId:92,level:20},{speciesId:41,level:20}], reward: 1080,
+        intro: "Prepare for trouble! Hand over your Pokémon!",
+        postLoss: "Team Rocket never forgets a face, twerp!" },
+    ],
     prevLocationId: "route8", nextLocationId: "route9" },
 
   { id: "route9", name: "Route 9", emoji: "🌾", encounters: [enc(100,3,16,18), enc(81,3,16,18), enc(84,3,16,18), enc(21,2,16,18)],
@@ -421,6 +448,12 @@ export const LOCATIONS: Location[] = [
     prevLocationId: "route14", nextLocationId: "fuchsia" },
 
   { id: "fuchsia", name: "Fuchsia City", emoji: "🦒", isTown: true, gymId: "koga", encounters: [],
+    trainers: [
+      { id: "saffron-silph-exec", title: "Rocket Executive", name: "Archer", sprite: "🅁", isRocket: true,
+        team: [{speciesId:42,level:38},{speciesId:24,level:38},{speciesId:53,level:39}], reward: 2400,
+        intro: "Silph Co. is ours! You won't leave this place!",
+        postLoss: "Giovanni will hear of this!" },
+    ],
     prevLocationId: "route15", nextLocationId: "route19" },
 
   { id: "route19", name: "Route 19", emoji: "🌊", encounters: [enc(72,5,20,30), enc(73,1,28,32)],
@@ -505,8 +538,14 @@ export const GYMS: GymLeader[] = [
     team: [{speciesId:58,level:42},{speciesId:77,level:40},{speciesId:78,level:42},{speciesId:59,level:47}], reward: 3100, unlockBadgeCount: 6,
     quote: "Hot! Take the Volcano Badge before I burn up!" },
   { id: "giovanni", name: "Giovanni", city: "Viridian City", badge: "Earth Badge", type: "Ground",
-    team: [{speciesId:111,level:45},{speciesId:51,level:42},{speciesId:31,level:44},{speciesId:34,level:45},{speciesId:112,level:50}], reward: 4000, unlockBadgeCount: 7,
-    quote: "You're the rightful winner. Take this Earth Badge!" },
+    team: [
+      {speciesId:53,level:45},   // Persian
+      {speciesId:51,level:42},   // Dugtrio
+      {speciesId:31,level:44},   // Nidoqueen
+      {speciesId:34,level:45},   // Nidoking
+      {speciesId:111,level:43},  // Rhyhorn
+    ], reward: 4000, unlockBadgeCount: 7,
+    quote: "So! I must hand over the Earth Badge. Team Rocket… is no more!" },
 ];
 
 // ---------- Elite Four + Champion ----------

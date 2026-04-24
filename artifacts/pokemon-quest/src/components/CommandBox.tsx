@@ -3,10 +3,15 @@ import { useGame } from "@/game/state";
 
 function colorClass(line: string) {
   const l = line.toLowerCase();
+  if (l.startsWith("[rocket]") || /team rocket|rocket grunt|rocket executive|giovanni/.test(l)) return "rocket";
   if (/(damage|fainted|hurt|hit|broke free)/.test(l)) return "dmg";
   if (/(potion|ball|received|caught|gained|heal|earned)/.test(l)) return "item";
   if (/(used|won|gotcha|begin|joined|evolved|appeared|safely)/.test(l)) return "ok";
   return "info";
+}
+
+function cleanLine(line: string) {
+  return line.replace(/^\[Rocket\]\s*/, "");
 }
 
 export default function CommandBox() {
@@ -37,12 +42,20 @@ export default function CommandBox() {
       </div>
       <div ref={ref} className="overflow-y-auto" style={{ maxHeight: 110 }}>
         {lines.length === 0 && <div className="empty">No commands yet…</div>}
-        {lines.map((line, i) => (
-          <div key={i} className="row">
-            <span className="prefix">&gt;</span>
-            <span className={colorClass(line)}>{line}</span>
-          </div>
-        ))}
+        {lines.map((line, i) => {
+          const cls = colorClass(line);
+          return (
+            <div key={i} className="row">
+              <span className="prefix">&gt;</span>
+              <span
+                className={cls}
+                style={cls === "rocket" ? { color: "#f43f5e", fontWeight: 700 } : undefined}
+              >
+                {cleanLine(line)}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
