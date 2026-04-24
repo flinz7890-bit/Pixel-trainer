@@ -45,6 +45,8 @@ export const ITEMS: ItemDef[] = [
   { id: "xdefense",  name: "X Defense",  price: 550, icon: "🛡️", spriteUrl: `${POKEAPI_ITEM}/x-defend.png`,  desc: "Raises Defense in battle.", tier: "mid", category: "boost" },
 
   { id: "repel",     name: "Repel",      price: 350, icon: "🚫", spriteUrl: `${POKEAPI_ITEM}/repel.png`,      desc: "Prevents wild encounters for 100 steps.", tier: "early", category: "special" },
+
+  { id: "expshare",  name: "EXP Share",  price: 3000, icon: "📡", spriteUrl: `${POKEAPI_ITEM}/exp-share.png`, desc: "Shares battle EXP with the rest of your team. One-time purchase, toggle on/off in your Trainer Card.", tier: "mid", category: "special" },
 ];
 
 export function getItem(id: string) {

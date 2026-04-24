@@ -85,6 +85,8 @@ export interface GameState {
   rocketFlags: Record<string, boolean>;
   pvpWins: number;
   pvpLosses: number;
+  expShareOwned: boolean;
+  expShareActive: boolean;
 }
 
 const SAVE_KEY = "pokemon-quest-save-v1";
@@ -189,6 +191,8 @@ const initialState: GameState = {
   rocketFlags: {},
   pvpWins: 0,
   pvpLosses: 0,
+  expShareOwned: false,
+  expShareActive: false,
 };
 
 type Action =
@@ -234,6 +238,7 @@ type Action =
   | { type: "SET_ROCKET_FLAG"; key: string }
   | { type: "INC_PVP_WIN" }
   | { type: "INC_PVP_LOSS" }
+  | { type: "TOGGLE_EXP_SHARE" }
   | { type: "INC_HUNT" }
   | { type: "RESPAWN_AT_HEAL" };
 
@@ -271,18 +276,26 @@ function reducer(state: GameState, action: Action): GameState {
       return { ...state, battle: { ...state.battle, log: [...state.battle.log, ...action.lines].slice(-30) } };
     case "GIVE_XP": {
       if (state.team.length === 0) return state;
-      const team = [...state.team];
-      let p = { ...team[0] };
-      p.xp += action.xp;
-      while (p.xp >= xpToNext(p.level)) {
-        p.xp -= xpToNext(p.level);
-        p.level += 1;
-        const oldMax = p.maxHp;
-        p = applyStats(p);
-        // heal up by the gained max-hp delta
-        p.hp = Math.min(p.maxHp, p.hp + (p.maxHp - oldMax));
-      }
-      team[0] = p;
+      const grantXp = (mon: OwnedPokemon, amount: number): OwnedPokemon => {
+        let p = { ...mon };
+        p.xp += amount;
+        while (p.xp >= xpToNext(p.level)) {
+          p.xp -= xpToNext(p.level);
+          p.level += 1;
+          const oldMax = p.maxHp;
+          p = applyStats(p);
+          p.hp = Math.min(p.maxHp, p.hp + (p.maxHp - oldMax));
+        }
+        return p;
+      };
+      const shareActive = !!state.expShareActive && state.expShareOwned;
+      const team = state.team.map((mon, i) => {
+        if (i === 0) return grantXp(mon, action.xp);
+        if (!shareActive) return mon;
+        // Only share with non-fainted teammates
+        if (mon.hp <= 0) return mon;
+        return grantXp(mon, Math.max(1, Math.floor(action.xp * 0.5)));
+      });
       return { ...state, team };
     }
     case "GAIN_EVS": {
@@ -331,6 +344,16 @@ function reducer(state: GameState, action: Action): GameState {
     }
     case "BUY_ITEM": {
       if (state.money < action.cost) return state;
+      // EXP Share is a one-time purchase that flips a flag instead of stacking
+      if (action.itemId === "expshare") {
+        if (state.expShareOwned) return state;
+        return {
+          ...state,
+          money: state.money - action.cost,
+          expShareOwned: true,
+          expShareActive: true,
+        };
+      }
       const items = { ...state.items, [action.itemId]: (state.items[action.itemId] || 0) + action.qty };
       let pokeballs = state.pokeballs, potions = state.potions;
       if (action.itemId === "pokeball") pokeballs += action.qty;
@@ -455,6 +478,9 @@ function reducer(state: GameState, action: Action): GameState {
       return { ...state, pvpWins: (state.pvpWins || 0) + 1 };
     case "INC_PVP_LOSS":
       return { ...state, pvpLosses: (state.pvpLosses || 0) + 1 };
+    case "TOGGLE_EXP_SHARE":
+      if (!state.expShareOwned) return state;
+      return { ...state, expShareActive: !state.expShareActive };
     case "INC_HUNT":
       return { ...state, wildEncounters: (state.wildEncounters || 0) + 1 };
     case "RESPAWN_AT_HEAL": {
@@ -526,6 +552,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
         rocketFlags: parsed.rocketFlags || {},
         pvpWins: parsed.pvpWins || 0,
         pvpLosses: parsed.pvpLosses || 0,
+        expShareOwned: !!parsed.expShareOwned,
+        expShareActive: !!parsed.expShareActive,
         summaryUid: null,
       } as GameState;
       dispatch({ type: "LOAD", payload: merged });
@@ -552,7 +580,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const toSave = { ...state, battle: null, toast: null };
       localStorage.setItem(SAVE_KEY, JSON.stringify(toSave));
     } catch { /* ignore */ }
-  }, [state.team, state.money, state.pokeballs, state.potions, state.badges, state.locationId, state.pokedex, state.screen, state.lastHealLocationId, state.routeProgress, state.visited, state.rocketFlags, state.pvpWins, state.pvpLosses]);
+  }, [state.team, state.money, state.pokeballs, state.potions, state.badges, state.locationId, state.pokedex, state.screen, state.lastHealLocationId, state.routeProgress, state.visited, state.rocketFlags, state.pvpWins, state.pvpLosses, state.expShareOwned, state.expShareActive]);
 
   // Auto clear toast
   useEffect(() => {
