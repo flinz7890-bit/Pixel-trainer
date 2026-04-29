@@ -17,21 +17,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Install and Build
-        run: |
-          cd artifacts/pokemon-quest
-          npm install --legacy-peer-deps
-          npx vite build --config vite.config.ts
-        env:
-          NODE_ENV: production
-          PORT: 3000
-          BASE_PATH: /Pixel-trainer
-
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
