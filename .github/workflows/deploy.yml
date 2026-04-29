@@ -30,8 +30,8 @@ jobs:
       - name: Install and Build
         run: |
           cd artifacts/pokemon-quest
-          pnpm install --no-frozen-lockfile
-          ./node_modules/.bin/vite build
+          npm install --legacy-peer-deps
+          npx vite build --config vite.config.ts
         env:
           NODE_ENV: production
           PORT: 3000
