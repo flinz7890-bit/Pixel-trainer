@@ -16,16 +16,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: 'pnpm'
+          cache-dependency-path: 'artifacts/pokemon-quest/pnpm-lock.yaml'
           
       - name: Install and Build
         run: |
           cd artifacts/pokemon-quest
-          npm install
-          npm run build
+          pnpm install
+          pnpm run build
           
       - name: Setup Pages
         uses: actions/configure-pages@v4
