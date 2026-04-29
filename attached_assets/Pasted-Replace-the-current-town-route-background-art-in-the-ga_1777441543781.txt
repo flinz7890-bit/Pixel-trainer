@@ -1,0 +1,38 @@
+Replace the current town/route background art in the game with official
+map images from Bulbapedia archives. Apply imageRendering: 'pixelated'
+to all images for a crisp retro look.
+
+Use this exact mapping of zone names to image URLs:
+
+const LOCATION_IMAGES = {
+  "Pallet Town":    "https://archives.bulbagarden.net/media/upload/0/00/Pallet_Town_FRLG.png",
+  "Route 1":        "https://archives.bulbagarden.net/media/upload/4/4c/Kanto_Route_1_Map.png",
+  "Viridian City":  "https://archives.bulbagarden.net/media/upload/8/8d/Viridian_City_FRLG.png",
+  "Route 2":        "https://archives.bulbagarden.net/media/upload/0/09/Kanto_Route_2_Map.png",
+  "Pewter City":    "https://archives.bulbagarden.net/media/upload/e/e7/Pewter_City_FRLG.png",
+  "Route 3":        "https://archives.bulbagarden.net/media/upload/8/80/Kanto_Route_3_Map.png",
+  "Mt. Moon":       "https://archives.bulbagarden.net/media/upload/8/8a/Mt_Moon_1F_FRLG.png",
+  "Route 4":        "https://archives.bulbagarden.net/media/upload/a/a8/Kanto_Route_4_Map.png",
+  "Cerulean City":  "https://archives.bulbagarden.net/media/upload/5/53/Cerulean_City_FRLG.png",
+  "Routes 5 & 6":   "https://archives.bulbagarden.net/media/upload/4/45/Kanto_Route_5_Map.png",
+  "Vermilion City": "https://archives.bulbagarden.net/media/upload/1/12/Vermilion_City_FRLG.png",
+  "Routes 7 & 8":   "https://archives.bulbagarden.net/media/upload/3/36/Kanto_Route_7_Map.png",
+  "Lavender Town":  "https://archives.bulbagarden.net/media/upload/1/16/Lavender_Town_FRLG.png",
+  "Routes 9 & 10":  "https://archives.bulbagarden.net/media/upload/2/27/Kanto_Route_9_Map.png",
+  "Celadon City":   "https://archives.bulbagarden.net/media/upload/a/a5/Celadon_City_FRLG.png",
+  "Routes 13-15":   "https://archives.bulbagarden.net/media/upload/0/05/Kanto_Route_13_Map.png",
+  "Fuchsia City":   "https://archives.bulbagarden.net/media/upload/3/3b/Fuchsia_City_FRLG.png",
+  "Routes 19-21":   "https://archives.bulbagarden.net/media/upload/e/ed/Kanto_Route_19_Map.png",
+  "Cinnabar Island":"https://archives.bulbagarden.net/media/upload/3/31/Cinnabar_Island_FRLG.png",
+  "Routes 22 & 23": "https://archives.bulbagarden.net/media/upload/f/f8/Kanto_Route_22_Map.png",
+  "Indigo Plateau": "https://archives.bulbagarden.net/media/upload/6/6c/Indigo_Plateau_FRLG.png",
+};
+
+In the zone/location render function, replace the current background
+scene with an <img> tag pointing to LOCATION_IMAGES[currentZone.name].
+Style the image to fill the scene container (width: 100%, height: 100%,
+object-fit: cover, imageRendering: 'pixelated').
+
+If any image fails to load (onerror event), silently fall back to the
+existing CSS-generated scene for that zone. Never show a broken image
+icon. Do not break any other existing functionality.

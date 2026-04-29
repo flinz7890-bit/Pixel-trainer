@@ -55,6 +55,7 @@ function CitySkyline({ isTown, locName, bgImage }: { isTown: boolean; locName: s
           alt={locName}
           className="ed-bg-img"
           loading="lazy"
+          style={{ imageRendering: "pixelated" }}
           onError={() => setImgFailed(true)}
         />
         <div className="ed-bg-overlay" />
