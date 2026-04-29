@@ -32,6 +32,9 @@ jobs:
           cd artifacts/pokemon-quest
           pnpm install --no-frozen-lockfile
           pnpm run build
+        env:
+          NODE_ENV: production
+          VITE_PORT_ENV: production
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
