@@ -28,7 +28,7 @@ See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and pa
 
 ## Artifacts
 
-- **pokemon-quest** — Pokémon-style turn-based browser game (React + Vite). Save data persists to `localStorage` under key `pokemon-quest-save-v1`. Game systems live in `artifacts/pokemon-quest/src/game/` (`data.ts` species/moves/locations/gyms, `state.tsx` reducer + provider, `stats.ts` IV/EV/nature math, `rocketStory.ts` Team Rocket triggers). Screens are in `src/screens/`. Uses `api-server` for online PVP only.
+- **pokemon-quest** — Pokémon-style turn-based browser game (React + Vite). Save data persists to `localStorage` under key `pokemon-quest-save-v1`. Game systems live in `artifacts/pokemon-quest/src/game/` (`data.ts` species/moves/locations/gyms + `LOCATION_BG` Bulbapedia thumbnails, `state.tsx` reducer + provider with `StatusCondition` BRN/PSN/PAR/SLP/FRZ on `OwnedPokemon`, `stats.ts` IV/EV/nature math, `rocketStory.ts` Team Rocket triggers including the Mr. Fuji `GIVE_EXP_SHARE` gift). Screens are in `src/screens/`. Battle features: PP per move (per-battle in BattleScreen state), in-battle EXP bar, type-tinted move buttons with effectiveness hints, status-condition badges + end-of-turn ticks, level-up banner overlay. EXP Share is a Key Item (no longer purchasable) — gifted by Mr. Fuji after defeating the Lavender Tower Rocket. Gym battles open a pre-battle intro modal (leader, badge, quote, Accept Challenge). Uses `api-server` for online PVP only.
 - **api-server** — Express 5 API at `/api`. Endpoints: `/healthz`, `/pvp/register`, `/pvp/players`, `/pvp/challenge*`, `/pvp/leaderboard`. PVP state is in-memory (resets on redeploy).
 
 ## Pokémon Quest Features

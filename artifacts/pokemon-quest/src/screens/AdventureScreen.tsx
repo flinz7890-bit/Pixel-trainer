@@ -1,6 +1,6 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useGame, makePokemon, BattleState, isLocationCleared } from "@/game/state";
-import { GYMS, LOCATIONS, SPECIES, TrainerNPC } from "@/game/data";
+import { GYMS, LOCATIONS, LOCATION_BG, SPECIES, TrainerNPC } from "@/game/data";
 import { runRocketStoryFor } from "@/game/rocketStory";
 import PokeSprite from "@/components/PokeSprite";
 import Toast from "@/components/Toast";
@@ -42,7 +42,28 @@ function dialogueFor(loc: ReturnType<typeof getLoc>, cleared: boolean, badges: n
 }
 function getLoc(id: string) { return LOCATIONS.find((l) => l.id === id)!; }
 
-function CitySkyline({ isTown, locName }: { isTown: boolean; locName: string }) {
+function CitySkyline({ isTown, locName, bgImage }: { isTown: boolean; locName: string; bgImage?: string }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  // If a real-image background is configured AND it loads, render the photo
+  // overlaid with a city-name badge. Otherwise fall back to the procedural
+  // CSS skyline below.
+  if (bgImage && !imgFailed) {
+    return (
+      <div className="ed-city-img-wrap ed-bg-image">
+        <img
+          src={bgImage}
+          alt={locName}
+          className="ed-bg-img"
+          loading="lazy"
+          onError={() => setImgFailed(true)}
+        />
+        <div className="ed-bg-overlay" />
+        <div className="ed-city-name-badge">
+          <span className="pin">📍</span> {locName.toUpperCase()}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className={`ed-city-img-wrap${isTown ? "" : " ed-day"}`}>
       <div className="ed-stars" />
@@ -233,7 +254,7 @@ export default function AdventureScreen() {
 
       {/* CITY CARD */}
       <div className="ed-city-card">
-        <CitySkyline isTown={inTown} locName={loc.name} />
+        <CitySkyline isTown={inTown} locName={loc.name} bgImage={loc.bgImage || LOCATION_BG[loc.id]} />
         <div className="ed-dialogue">
           <div className="speaker">{dlg.speaker}</div>
           <div className="text">

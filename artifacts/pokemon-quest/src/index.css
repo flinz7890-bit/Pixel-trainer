@@ -1484,3 +1484,288 @@ body::before {
   display: grid; place-items: center;
   flex-shrink: 0;
 }
+
+/* ========================================================================
+   Status condition badges (BRN/PSN/PAR/SLP/FRZ) shown on stat cards
+   ======================================================================== */
+.wb-status-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #0b1220;
+  border-radius: 3px;
+  vertical-align: middle;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.25);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.35), inset 0 -1px 0 rgba(0,0,0,0.18);
+}
+
+/* ========================================================================
+   In-battle EXP bar (under player HP bar)
+   ======================================================================== */
+.wb-xp-bar {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  margin-top: 3px;
+  background: rgba(15,23,42,0.7);
+  border: 1px solid rgba(56,189,248,0.25);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.wb-xp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #0ea5e9);
+  box-shadow: 0 0 6px rgba(56,189,248,0.6);
+  transition: width 320ms ease-out;
+}
+
+/* ========================================================================
+   Move-button enhancements: PP, type tinting, effectiveness hints
+   ======================================================================== */
+.wb-move-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+.wb-move-pp {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  font-variant-numeric: tabular-nums;
+}
+.wb-move-eff {
+  font-size: 10px;
+  font-weight: 800;
+  margin-top: 2px;
+  letter-spacing: 0.3px;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.5);
+}
+
+/* ========================================================================
+   Level-up banner overlay
+   ======================================================================== */
+@keyframes pqLevelUpIn {
+  0%   { transform: translate(-50%, -16px) scale(0.85); opacity: 0; }
+  20%  { transform: translate(-50%, 0)     scale(1.04); opacity: 1; }
+  100% { transform: translate(-50%, 0)     scale(1);    opacity: 1; }
+}
+@keyframes pqLevelUpOut {
+  to { opacity: 0; transform: translate(-50%, -10px) scale(0.95); }
+}
+.pq-levelup-banner {
+  position: fixed;
+  left: 50%;
+  top: 92px;
+  transform: translate(-50%, 0);
+  z-index: 60;
+  min-width: 240px;
+  max-width: 340px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(250,204,21,0.95) 0%, rgba(245,158,11,0.95) 100%);
+  border: 2px solid #fbbf24;
+  border-radius: 12px;
+  color: #0b1220;
+  font-weight: 800;
+  text-align: center;
+  box-shadow: 0 10px 24px rgba(250,204,21,0.45), 0 0 0 1px rgba(255,255,255,0.4) inset;
+  animation: pqLevelUpIn 360ms cubic-bezier(.16,.84,.44,1) both, pqLevelUpOut 400ms ease-in 2.8s forwards;
+}
+.pq-levelup-title {
+  font-size: 14px;
+  letter-spacing: 0.3px;
+  margin-bottom: 6px;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+}
+.pq-levelup-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.pq-levelup-grid > div {
+  display: flex;
+  justify-content: space-between;
+  background: rgba(255,255,255,0.35);
+  border-radius: 5px;
+  padding: 2px 6px;
+}
+.pq-levelup-grid > div span {
+  color: #047857;
+  font-weight: 800;
+}
+
+/* ========================================================================
+   Real-image location backgrounds (Bulbapedia LGPE thumbnails)
+   ======================================================================== */
+.ed-bg-image {
+  position: relative;
+  overflow: hidden;
+  background: #0b1220;
+}
+.ed-bg-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: saturate(1.05) contrast(1.02);
+}
+.ed-bg-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(11,18,32,0.05) 0%, rgba(11,18,32,0.15) 60%, rgba(11,18,32,0.55) 100%);
+}
+
+/* ========================================================================
+   Gym pre-battle intro modal
+   ======================================================================== */
+.pq-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(7, 12, 24, 0.78);
+  backdrop-filter: blur(4px);
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  animation: pqFadeIn 180ms ease-out both;
+}
+@keyframes pqFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pqGymIntroIn {
+  from { transform: translateY(14px) scale(0.96); opacity: 0; }
+  to   { transform: translateY(0)     scale(1);    opacity: 1; }
+}
+.pq-gym-intro {
+  width: 100%;
+  max-width: 380px;
+  background: linear-gradient(180deg, #0f1a30 0%, #0b1220 100%);
+  border: 2px solid #facc15;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05) inset;
+  animation: pqGymIntroIn 280ms cubic-bezier(.2,.8,.4,1) both;
+  color: #e2e8f0;
+}
+.pq-gym-intro-header {
+  padding: 14px 16px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #0b1220;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.25);
+}
+.pq-gym-intro-leader-name {
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+}
+.pq-gym-intro-leader-city {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+.pq-gym-intro-type-pill {
+  padding: 4px 10px;
+  background: rgba(11,18,32,0.6);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  border-radius: 999px;
+  text-shadow: none;
+}
+.pq-gym-intro-body {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.pq-gym-intro-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: rgba(250,204,21,0.08);
+  border: 1px solid rgba(250,204,21,0.35);
+  border-radius: 10px;
+}
+.pq-gym-intro-badge-icon { font-size: 32px; flex-shrink: 0; }
+.pq-gym-intro-badge-info { flex: 1; min-width: 0; }
+.pq-gym-intro-badge-label {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: #facc15;
+  font-weight: 800;
+}
+.pq-gym-intro-badge-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  margin-top: 1px;
+}
+.pq-gym-intro-reward {
+  font-size: 11px;
+  color: #4ade80;
+  font-weight: 700;
+  margin-top: 2px;
+}
+.pq-gym-intro-quote {
+  position: relative;
+  padding: 10px 12px 10px 28px;
+  background: rgba(56,189,248,0.06);
+  border-left: 3px solid #38bdf8;
+  border-radius: 0 8px 8px 0;
+  font-style: italic;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #cbd5e1;
+}
+.pq-gym-intro-quote-mark {
+  position: absolute;
+  top: 4px;
+  left: 8px;
+  font-size: 26px;
+  font-style: normal;
+  color: #38bdf8;
+  line-height: 1;
+  font-weight: 900;
+}
+.pq-gym-intro-team-label {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: #94a3b8;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+.pq-gym-intro-team-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.pq-gym-intro-team-chip {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  background: rgba(148,163,184,0.12);
+  border: 1px solid rgba(148,163,184,0.3);
+  border-radius: 999px;
+  color: #e2e8f0;
+}
+.pq-gym-intro-team-chip b { color: #facc15; }
+.pq-gym-intro-footer {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px 14px;
+  border-top: 1px solid rgba(148,163,184,0.15);
+}
+.pq-gym-intro-footer .pq-btn { flex: 1; }

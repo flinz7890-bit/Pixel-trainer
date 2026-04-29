@@ -12,6 +12,8 @@ import {
 
 export type Screen = "welcome" | "trainerpick" | "menu" | "starter" | "adventure" | "encounter" | "battle" | "blackout" | "center" | "mart" | "gym" | "pokedex" | "card" | "settings" | "summary" | "pvp";
 
+export type StatusCondition = "BRN" | "PAR" | "PSN" | "SLP" | "FRZ";
+
 export interface OwnedPokemon {
   uid: string;
   speciesId: number;
@@ -30,6 +32,8 @@ export interface OwnedPokemon {
   evs?: StatBlock;
   nature?: string;
   gender: "M" | "F";
+  status?: StatusCondition;
+  statusTurns?: number; // for SLP countdown
 }
 
 export interface BattleState {
@@ -239,6 +243,10 @@ type Action =
   | { type: "INC_PVP_WIN" }
   | { type: "INC_PVP_LOSS" }
   | { type: "TOGGLE_EXP_SHARE" }
+  | { type: "GIVE_EXP_SHARE" }
+  | { type: "SET_STATUS"; uid: string; status?: StatusCondition; turns?: number }
+  | { type: "CLEAR_STATUS"; uid: string }
+  | { type: "PATCH_TEAM_MEMBER"; uid: string; patch: Partial<OwnedPokemon> }
   | { type: "INC_HUNT" }
   | { type: "RESPAWN_AT_HEAL" };
 
@@ -290,21 +298,49 @@ function reducer(state: GameState, action: Action): GameState {
       };
       const shareActive = !!state.expShareActive && state.expShareOwned;
       const team = state.team.map((mon, i) => {
+        // Fainted Pokémon NEVER receive XP (per spec, even the active slot)
+        if (mon.hp <= 0) return mon;
         if (i === 0) return grantXp(mon, action.xp);
         if (!shareActive) return mon;
-        // Only share with non-fainted teammates
-        if (mon.hp <= 0) return mon;
         return grantXp(mon, Math.max(1, Math.floor(action.xp * 0.5)));
       });
       return { ...state, team };
     }
     case "GAIN_EVS": {
       if (state.team.length === 0) return state;
+      const shareActive = !!state.expShareActive && state.expShareOwned;
+      const team = state.team.map((mon, i) => {
+        if (mon.hp <= 0) return mon;
+        if (i !== 0 && !shareActive) return mon;
+        let p = { ...mon };
+        p.evs = addEVs(p.evs || emptyEVs(), action.yieldEVs);
+        p = applyStats(p);
+        return p;
+      });
+      return { ...state, team };
+    }
+    case "GIVE_EXP_SHARE":
+      if (state.expShareOwned) return state;
+      return { ...state, expShareOwned: true, expShareActive: true };
+    case "SET_STATUS": {
+      const idx = state.team.findIndex((p) => p.uid === action.uid);
+      if (idx < 0) return state;
       const team = [...state.team];
-      let p = { ...team[0] };
-      p.evs = addEVs(p.evs || emptyEVs(), action.yieldEVs);
-      p = applyStats(p);
-      team[0] = p;
+      team[idx] = { ...team[idx], status: action.status, statusTurns: action.turns };
+      return { ...state, team };
+    }
+    case "CLEAR_STATUS": {
+      const idx = state.team.findIndex((p) => p.uid === action.uid);
+      if (idx < 0) return state;
+      const team = [...state.team];
+      team[idx] = { ...team[idx], status: undefined, statusTurns: undefined };
+      return { ...state, team };
+    }
+    case "PATCH_TEAM_MEMBER": {
+      const idx = state.team.findIndex((p) => p.uid === action.uid);
+      if (idx < 0) return state;
+      const team = [...state.team];
+      team[idx] = { ...team[idx], ...action.patch };
       return { ...state, team };
     }
     case "EVOLVE_ACTIVE": {
@@ -324,7 +360,9 @@ function reducer(state: GameState, action: Action): GameState {
       return { ...state, storage: [...state.storage, action.pokemon] };
     }
     case "HEAL_ALL": {
-      const team = state.team.map((p) => ({ ...p, hp: p.maxHp }));
+      // Restore HP, status conditions, AND PP (PP is tracked per-battle, but
+      // clearing status here is the persistent effect).
+      const team = state.team.map((p) => ({ ...p, hp: p.maxHp, status: undefined, statusTurns: undefined }));
       return { ...state, team };
     }
     case "SPEND_MONEY":
@@ -372,8 +410,25 @@ function reducer(state: GameState, action: Action): GameState {
 
       if (def.healAmount || def.fullHeal) {
         if (target.hp <= 0 && !def.fullHeal) return state;
-        if (def.fullHeal) target.hp = target.maxHp;
-        else target.hp = Math.min(target.maxHp, target.hp + (def.healAmount || 0));
+        if (def.fullHeal) {
+          target.hp = target.maxHp;
+          target.status = undefined;
+          target.statusTurns = undefined;
+        } else target.hp = Math.min(target.maxHp, target.hp + (def.healAmount || 0));
+      } else if (def.curesStatus) {
+        // Antidote / Parlyz Heal / etc — must match the current status.
+        const curesMap: Record<string, string> = {
+          antidote: "PSN",
+          parlyzheal: "PAR",
+          awakening: "SLP",
+          iceheal: "FRZ",
+          burnheal: "BRN",
+        };
+        const required = curesMap[def.id];
+        if (required && target.status !== required) return state;
+        if (!target.status) return state;
+        target.status = undefined;
+        target.statusTurns = undefined;
       } else if (def.reviveHalf) {
         if (target.hp > 0) return state;
         target.hp = Math.max(1, Math.floor(target.maxHp / 2));

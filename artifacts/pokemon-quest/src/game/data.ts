@@ -6,6 +6,18 @@ export interface Move {
   name: string;
   power: number;
   type: PokeType;
+  pp?: number;
+}
+
+// Default Power Points by move power tier
+export function defaultPP(power: number): number {
+  if (power <= 10) return 35;
+  if (power <= 14) return 25;
+  if (power <= 18) return 15;
+  return 10;
+}
+export function maxPpFor(m: Move): number {
+  return m.pp ?? defaultPP(m.power);
 }
 
 export interface Species {
@@ -336,7 +348,28 @@ export interface Location {
   arrivalBadge?: string;
   arrivalMessage?: string;
   requiresBadges?: number;
+  bgImage?: string;
 }
+
+// Bulbapedia / public Kanto location images keyed by location id.
+// Falls back to the procedural CSS skyline when missing or on load error.
+export const LOCATION_BG: Record<string, string> = {
+  pallet:    "https://archives.bulbagarden.net/media/upload/thumb/3/3e/Pallet_Town_LGPE.png/600px-Pallet_Town_LGPE.png",
+  route1:    "https://archives.bulbagarden.net/media/upload/thumb/5/5b/Kanto_Route_1_LGPE.png/600px-Kanto_Route_1_LGPE.png",
+  viridian:  "https://archives.bulbagarden.net/media/upload/thumb/0/05/Viridian_City_LGPE.png/600px-Viridian_City_LGPE.png",
+  route2:    "https://archives.bulbagarden.net/media/upload/thumb/3/3a/Kanto_Route_2_LGPE.png/600px-Kanto_Route_2_LGPE.png",
+  pewter:    "https://archives.bulbagarden.net/media/upload/thumb/9/97/Pewter_City_LGPE.png/600px-Pewter_City_LGPE.png",
+  route3:    "https://archives.bulbagarden.net/media/upload/thumb/d/d6/Kanto_Route_3_LGPE.png/600px-Kanto_Route_3_LGPE.png",
+  mtmoon:    "https://archives.bulbagarden.net/media/upload/thumb/9/95/Mt_Moon_LGPE.png/600px-Mt_Moon_LGPE.png",
+  route4:    "https://archives.bulbagarden.net/media/upload/thumb/5/53/Kanto_Route_4_LGPE.png/600px-Kanto_Route_4_LGPE.png",
+  cerulean:  "https://archives.bulbagarden.net/media/upload/thumb/5/55/Cerulean_City_LGPE.png/600px-Cerulean_City_LGPE.png",
+  vermilion: "https://archives.bulbagarden.net/media/upload/thumb/9/95/Vermilion_City_LGPE.png/600px-Vermilion_City_LGPE.png",
+  lavender:  "https://archives.bulbagarden.net/media/upload/thumb/2/27/Lavender_Town_LGPE.png/600px-Lavender_Town_LGPE.png",
+  celadon:   "https://archives.bulbagarden.net/media/upload/thumb/a/aa/Celadon_City_LGPE.png/600px-Celadon_City_LGPE.png",
+  fuchsia:   "https://archives.bulbagarden.net/media/upload/thumb/6/65/Fuchsia_City_LGPE.png/600px-Fuchsia_City_LGPE.png",
+  cinnabar:  "https://archives.bulbagarden.net/media/upload/thumb/6/68/Cinnabar_Island_LGPE.png/600px-Cinnabar_Island_LGPE.png",
+  indigo:    "https://archives.bulbagarden.net/media/upload/thumb/f/f1/Indigo_Plateau_LGPE.png/600px-Indigo_Plateau_LGPE.png",
+};
 
 const enc = (speciesId: number, weight: number, minLevel: number, maxLevel: number) =>
   ({ speciesId, weight, minLevel, maxLevel });

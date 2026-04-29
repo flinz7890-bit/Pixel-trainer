@@ -159,17 +159,19 @@ export default function TrainerCardScreen() {
       </button>
 
       {state.expShareOwned && (
-        <button
+        <div
           className="pq-btn pq-btn-ghost"
-          onClick={() => dispatch({ type: "TOGGLE_EXP_SHARE" })}
           style={{
-            borderColor: state.expShareActive ? "rgba(74,222,128,0.6)" : "rgba(168,85,247,0.45)",
-            color: state.expShareActive ? "#4ade80" : "#c084fc",
-            background: state.expShareActive ? "rgba(74,222,128,0.08)" : "transparent",
+            borderColor: "rgba(74,222,128,0.6)",
+            color: "#4ade80",
+            background: "rgba(74,222,128,0.08)",
+            cursor: "default",
+            textAlign: "center",
           }}
+          title="Key Item — gift from Mr. Fuji"
         >
-          📡 EXP Share: {state.expShareActive ? "ON" : "OFF"}
-        </button>
+          📡 EXP Share — KEY ITEM (always on)
+        </div>
       )}
 
       <button

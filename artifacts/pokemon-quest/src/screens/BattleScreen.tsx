@@ -1,7 +1,7 @@
 import PokeSprite from "@/components/PokeSprite";
 import { useEffect, useRef, useState } from "react";
-import { useGame, speciesOf, OwnedPokemon, makePokemon } from "@/game/state";
-import { Move, SPECIES, GYMS, LOCATIONS, PokeType, effectiveness, effectivenessLabel } from "@/game/data";
+import { useGame, speciesOf, OwnedPokemon, makePokemon, xpToNext, StatusCondition } from "@/game/state";
+import { Move, SPECIES, GYMS, LOCATIONS, PokeType, effectiveness, effectivenessLabel, maxPpFor } from "@/game/data";
 import { ITEMS as ITEM_DEFS, getItem } from "@/game/items";
 import Toast from "@/components/Toast";
 import ItemIcon from "@/components/ItemIcon";
@@ -9,6 +9,51 @@ import { typeColor } from "@/components/TypeBadge";
 import { isSpecialMove, evYieldOf } from "@/game/stats";
 
 const SPECIAL_TYPES = new Set<string>(["fire","water","electric","grass","psychic","ice","dragon","ghost","dark","fairy"]);
+
+// Status badge colors
+const STATUS_COLOR: Record<StatusCondition, string> = {
+  BRN: "#ef4444",
+  PSN: "#a855f7",
+  PAR: "#facc15",
+  SLP: "#94a3b8",
+  FRZ: "#67e8f9",
+};
+const STATUS_LABEL: Record<StatusCondition, string> = {
+  BRN: "BRN", PSN: "PSN", PAR: "PAR", SLP: "SLP", FRZ: "FRZ",
+};
+
+// Roll a possible status condition triggered by a damaging move's type.
+function rollStatusFromMove(move: Move): StatusCondition | null {
+  const r = Math.random();
+  switch (move.type) {
+    case "Fire":     if (r < 0.10) return "BRN"; break;
+    case "Electric": if (r < 0.10) return "PAR"; break;
+    case "Poison":   if (r < 0.30) return "PSN"; break;
+    case "Ice":      if (r < 0.10) return "FRZ"; break;
+    case "Grass":    if (r < 0.05) return "SLP"; break;
+    default: break;
+  }
+  return null;
+}
+
+// Type effectiveness label suitable for a move button hint
+function effectivenessHint(mult: number): { text: string; color: string } | null {
+  if (mult === 0) return { text: "✗ No Effect", color: "#9ca3af" };
+  if (mult >= 2) return { text: "▲▲ Super Effective!", color: "#fb923c" };
+  if (mult > 1) return { text: "▲ Effective", color: "#facc15" };
+  if (mult > 0 && mult < 1) return { text: "▼ Not Very Effective", color: "#9ca3af" };
+  return null;
+}
+
+function statusVerb(s: StatusCondition): string {
+  switch (s) {
+    case "BRN": return "burned";
+    case "PSN": return "poisoned";
+    case "PAR": return "paralyzed";
+    case "SLP": return "put to sleep";
+    case "FRZ": return "frozen";
+  }
+}
 
 // Move type → CSS animation name + duration (ms)
 const MOVE_ANIM: Record<string, { name: string; dur: number }> = {
@@ -93,6 +138,15 @@ export default function BattleScreen() {
   const [turnNum, setTurnNum] = useState(1);
   const [throwing, setThrowing] = useState<null | { ball: string; phase: "throw" | "wobble" | "burst" | "captured" }>(null);
   const [enemyCapture, setEnemyCapture] = useState(false);
+  // Per-battle PP tracker: ppMap[uid][moveName] = remaining PP
+  const [ppMap, setPpMap] = useState<Record<string, Record<string, number>>>({});
+  // Level-up banner state
+  const [levelUp, setLevelUp] = useState<null | {
+    name: string; from: number; to: number;
+    deltas: { hp: number; atk: number; def: number; spa: number; spd: number; spe: number };
+  }>(null);
+  const prevLevelRef = useRef<number>(0);
+  const prevStatsRef = useRef<{ maxHp: number; atk: number; def: number; spa: number; spd: number; spe: number }>({ maxHp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 });
   const enemySpriteRef = useRef<HTMLDivElement>(null);
   const playerSpriteRef = useRef<HTMLDivElement>(null);
   const arenaRef = useRef<HTMLDivElement>(null);
@@ -215,10 +269,202 @@ export default function BattleScreen() {
     }
   }, [player?.speciesId, player?.level]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Detect level-ups → show banner with stat increases
+  useEffect(() => {
+    if (!player) return;
+    if (prevLevelRef.current === 0) {
+      // First mount: just record baseline
+      prevLevelRef.current = player.level;
+      prevStatsRef.current = {
+        maxHp: player.maxHp,
+        atk: player.atk,
+        def: player.def ?? 0,
+        spa: player.spa ?? 0,
+        spd: player.spd ?? 0,
+        spe: player.spe ?? 0,
+      };
+      return;
+    }
+    if (player.level > prevLevelRef.current) {
+      const prev = prevStatsRef.current;
+      setLevelUp({
+        name: speciesOf(player).name,
+        from: prevLevelRef.current,
+        to: player.level,
+        deltas: {
+          hp:  player.maxHp     - prev.maxHp,
+          atk: player.atk       - prev.atk,
+          def: (player.def ?? 0) - prev.def,
+          spa: (player.spa ?? 0) - prev.spa,
+          spd: (player.spd ?? 0) - prev.spd,
+          spe: (player.spe ?? 0) - prev.spe,
+        },
+      });
+      setTimeout(() => setLevelUp(null), 3200);
+      prevLevelRef.current = player.level;
+      prevStatsRef.current = {
+        maxHp: player.maxHp,
+        atk: player.atk,
+        def: player.def ?? 0,
+        spa: player.spa ?? 0,
+        spd: player.spd ?? 0,
+        spe: player.spe ?? 0,
+      };
+    } else if (player.level < prevLevelRef.current || player.uid !== undefined) {
+      // Active swapped — re-baseline silently
+      prevLevelRef.current = player.level;
+      prevStatsRef.current = {
+        maxHp: player.maxHp,
+        atk: player.atk,
+        def: player.def ?? 0,
+        spa: player.spa ?? 0,
+        spd: player.spd ?? 0,
+        spe: player.spe ?? 0,
+      };
+    }
+  }, [player?.uid, player?.level]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Initialize PP for any active Pokémon entering battle
+  useEffect(() => {
+    if (!player) return;
+    if (ppMap[player.uid]) return;
+    const sp = SPECIES[player.speciesId];
+    const fresh: Record<string, number> = {};
+    for (const m of sp.moves) fresh[m.name] = maxPpFor(m);
+    setPpMap((m) => ({ ...m, [player.uid]: fresh }));
+  }, [player?.uid]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ----- Status condition helpers -----
+  // Pre-action gate: returns true if the actor can take its action this turn.
+  // Side effects: logs the appropriate message and may clear/decrement the status.
+  const playerCanAct = async (): Promise<boolean> => {
+    const s = player.status;
+    if (!s) return true;
+    if (s === "FRZ") {
+      if (Math.random() < 0.20) {
+        log([`${playerSp.name} thawed out!`]);
+        dispatch({ type: "CLEAR_STATUS", uid: player.uid });
+        await sleep(450);
+        return true;
+      }
+      log([`${playerSp.name} is frozen solid!`]);
+      await sleep(550);
+      return false;
+    }
+    if (s === "SLP") {
+      const left = Math.max(0, (player.statusTurns ?? 1) - 1);
+      if (left <= 0) {
+        log([`${playerSp.name} woke up!`]);
+        dispatch({ type: "CLEAR_STATUS", uid: player.uid });
+        await sleep(450);
+        return true;
+      }
+      log([`${playerSp.name} is fast asleep…`]);
+      dispatch({ type: "PATCH_TEAM_MEMBER", uid: player.uid, patch: { statusTurns: left } });
+      await sleep(550);
+      return false;
+    }
+    if (s === "PAR") {
+      if (Math.random() < 0.25) {
+        log([`${playerSp.name} is paralyzed! It can't move!`]);
+        await sleep(550);
+        return false;
+      }
+    }
+    return true; // BRN/PSN allow movement
+  };
+
+  const enemyCanAct = async (): Promise<boolean> => {
+    const s = enemy.status;
+    if (!s) return true;
+    if (s === "FRZ") {
+      if (Math.random() < 0.20) {
+        log([`Foe ${enemySp.name} thawed out!`]);
+        dispatch({ type: "PATCH_BATTLE", patch: { enemy: { ...enemy, status: undefined, statusTurns: undefined } } });
+        await sleep(450);
+        return true;
+      }
+      log([`Foe ${enemySp.name} is frozen solid!`]);
+      await sleep(550);
+      return false;
+    }
+    if (s === "SLP") {
+      const left = Math.max(0, (enemy.statusTurns ?? 1) - 1);
+      if (left <= 0) {
+        log([`Foe ${enemySp.name} woke up!`]);
+        dispatch({ type: "PATCH_BATTLE", patch: { enemy: { ...enemy, status: undefined, statusTurns: undefined } } });
+        await sleep(450);
+        return true;
+      }
+      log([`Foe ${enemySp.name} is fast asleep…`]);
+      dispatch({ type: "PATCH_BATTLE", patch: { enemy: { ...enemy, statusTurns: left } } });
+      await sleep(550);
+      return false;
+    }
+    if (s === "PAR") {
+      if (Math.random() < 0.25) {
+        log([`Foe ${enemySp.name} is paralyzed! It can't move!`]);
+        await sleep(550);
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // End-of-turn HP loss from BRN/PSN. Returns true if target fainted.
+  const tickPlayerStatus = async (): Promise<boolean> => {
+    const s = player.status;
+    if (s !== "BRN" && s !== "PSN") return false;
+    const loss = Math.max(1, Math.floor(player.maxHp / (s === "BRN" ? 16 : 8)));
+    const newHp = Math.max(0, player.hp - loss);
+    dispatch({ type: "PATCH_PLAYER_ACTIVE", patch: { hp: newHp } });
+    showFloatingDamage("player", loss, 1);
+    log([`${playerSp.name} is hurt by ${s === "BRN" ? "its burn" : "poison"}! -${loss} HP`]);
+    await sleep(700);
+    return newHp <= 0;
+  };
+  const tickEnemyStatus = async (): Promise<boolean> => {
+    const s = enemy.status;
+    if (s !== "BRN" && s !== "PSN") return false;
+    const loss = Math.max(1, Math.floor(enemy.maxHp / (s === "BRN" ? 16 : 8)));
+    const newHp = Math.max(0, enemy.hp - loss);
+    dispatch({ type: "PATCH_BATTLE", patch: { enemy: { ...enemy, hp: newHp } } });
+    showFloatingDamage("enemy", loss, 1);
+    log([`Foe ${enemySp.name} is hurt by ${s === "BRN" ? "its burn" : "poison"}! -${loss} HP`]);
+    await sleep(700);
+    return newHp <= 0;
+  };
+
   const enemyTurn = async () => {
     if (battle.outcome) return;
     setBusy(true);
     await sleep(500);
+    // Pre-action: status may prevent the move
+    if (!(await enemyCanAct())) {
+      // Even when enemy skips, end-of-turn ticks still apply for both
+      const playerKO = await tickPlayerStatus();
+      if (playerKO) {
+        log([`${playerSp.name} fainted!`]);
+        await sleep(500);
+        const team = state.team;
+        const altIdx = team.findIndex((p, i) => i !== 0 && p.hp > 0);
+        if (altIdx > 0) {
+          const inName = speciesOf(team[altIdx]).name.toUpperCase();
+          log([`Go! ${inName}!`]);
+          dispatch({ type: "SWAP_ACTIVE", withIndex: altIdx });
+          await sleep(700);
+          setTurnNum((n) => n + 1);
+          dispatch({ type: "PATCH_BATTLE", patch: { turn: "player", busy: false } });
+          return;
+        }
+        await endBattleAfter("lost");
+        return;
+      }
+      await tickEnemyStatus();
+      setTurnNum((n) => n + 1);
+      dispatch({ type: "PATCH_BATTLE", patch: { turn: "player", busy: false } });
+      return;
+    }
     const move = enemySp.moves[Math.floor(Math.random() * enemySp.moves.length)];
     log([`Foe ${enemySp.name} used ${move.name}!`]);
     // Play move animation BEFORE damage
@@ -231,6 +477,15 @@ export default function BattleScreen() {
     dispatch({ type: "PATCH_PLAYER_ACTIVE", patch: { hp: newHp } });
     const effMsg = effectivenessLabel(mult);
     log([`It dealt ${dmg} damage!`, ...(effMsg ? [effMsg] : [])]);
+    // Possibly inflict status on player
+    if (newHp > 0 && !player.status && mult > 0) {
+      const inflicted = rollStatusFromMove(move);
+      if (inflicted) {
+        const turns = inflicted === "SLP" ? 1 + Math.floor(Math.random() * 3) : undefined;
+        dispatch({ type: "SET_STATUS", uid: player.uid, status: inflicted, turns });
+        log([`${playerSp.name} was ${statusVerb(inflicted)}!`]);
+      }
+    }
     await sleep(900);
     if (newHp <= 0) {
       log([`${playerSp.name} fainted!`]);
@@ -249,6 +504,26 @@ export default function BattleScreen() {
       await endBattleAfter("lost");
       return;
     }
+    // End-of-turn: BRN/PSN ticks for player then enemy
+    const playerKO = await tickPlayerStatus();
+    if (playerKO) {
+      log([`${playerSp.name} fainted!`]);
+      await sleep(500);
+      const team = state.team;
+      const altIdx = team.findIndex((p, i) => i !== 0 && p.hp > 0);
+      if (altIdx > 0) {
+        const inName = speciesOf(team[altIdx]).name.toUpperCase();
+        log([`Go! ${inName}!`]);
+        dispatch({ type: "SWAP_ACTIVE", withIndex: altIdx });
+        await sleep(700);
+        setTurnNum((n) => n + 1);
+        dispatch({ type: "PATCH_BATTLE", patch: { turn: "player", busy: false } });
+        return;
+      }
+      await endBattleAfter("lost");
+      return;
+    }
+    await tickEnemyStatus();
     setTurnNum((n) => n + 1);
     dispatch({ type: "PATCH_BATTLE", patch: { turn: "player", busy: false } });
   };
@@ -285,7 +560,24 @@ export default function BattleScreen() {
 
   const onFight = async (move: Move) => {
     if (battle.busy || battle.turn !== "player" || battle.outcome) return;
+    // PP check
+    const pp = ppMap[player.uid]?.[move.name];
+    if (typeof pp === "number" && pp <= 0) {
+      dispatch({ type: "TOAST", text: `${move.name} has no PP left!` });
+      return;
+    }
     setBusy(true);
+    // Pre-action: status may prevent the move
+    if (!(await playerCanAct())) {
+      dispatch({ type: "PATCH_BATTLE", patch: { turn: "enemy" } });
+      await enemyTurn();
+      return;
+    }
+    // Decrement PP for this move
+    setPpMap((m) => {
+      const cur = m[player.uid] || {};
+      return { ...m, [player.uid]: { ...cur, [move.name]: Math.max(0, (cur[move.name] ?? maxPpFor(move)) - 1) } };
+    });
     log([`${playerSp.name} used ${move.name}!`]);
     // Play move animation BEFORE damage applies
     await playMoveAnimation(move.type, "player");
@@ -297,6 +589,15 @@ export default function BattleScreen() {
     dispatch({ type: "PATCH_BATTLE", patch: { enemy: { ...enemy, hp: newEnemyHp } } });
     const effMsg = effectivenessLabel(mult);
     log([`It dealt ${dmg} damage!`, ...(effMsg ? [effMsg] : [])]);
+    // Possibly inflict status on enemy
+    if (newEnemyHp > 0 && !enemy.status && mult > 0) {
+      const inflicted = rollStatusFromMove(move);
+      if (inflicted) {
+        const turns = inflicted === "SLP" ? 1 + Math.floor(Math.random() * 3) : undefined;
+        dispatch({ type: "PATCH_BATTLE", patch: { enemy: { ...enemy, hp: newEnemyHp, status: inflicted, statusTurns: turns } } });
+        log([`Foe ${enemySp.name} was ${statusVerb(inflicted)}!`]);
+      }
+    }
     await sleep(900);
     if (newEnemyHp <= 0) {
       log([`Foe ${enemySp.name} fainted!`]);
@@ -471,7 +772,14 @@ export default function BattleScreen() {
         <div className="wb-enemy-row">
           <div className="wb-statcard">
             <div className="wb-statcard-row">
-              <span className="wb-name">{enemySp.name}</span>
+              <span className="wb-name">
+                {enemySp.name}
+                {enemy.status && (
+                  <span className="wb-status-badge" style={{ background: STATUS_COLOR[enemy.status] }}>
+                    {STATUS_LABEL[enemy.status]}
+                  </span>
+                )}
+              </span>
               <span className="wb-lvl">Lv{enemy.level}</span>
             </div>
             <div className="wb-types">
@@ -521,10 +829,24 @@ export default function BattleScreen() {
           </div>
           <div className="wb-statcard">
             <div className="wb-statcard-row">
-              <span className="wb-name">{playerSp.name}</span>
+              <span className="wb-name">
+                {playerSp.name}
+                {player.status && (
+                  <span className="wb-status-badge" style={{ background: STATUS_COLOR[player.status] }}>
+                    {STATUS_LABEL[player.status]}
+                  </span>
+                )}
+              </span>
               <span className="wb-lvl">Lv{player.level}</span>
             </div>
             <HpBar p={player} big />
+            {/* In-battle EXP bar */}
+            <div className="wb-xp-bar" title={`${player.xp} / ${xpToNext(player.level)} XP`}>
+              <div
+                className="wb-xp-fill"
+                style={{ width: `${Math.max(0, Math.min(100, (player.xp / Math.max(1, xpToNext(player.level))) * 100))}%` }}
+              />
+            </div>
             <div className="wb-statcard-row wb-statcard-bottom">
               <span className="wb-hp-num">{player.hp}/{player.maxHp}</span>
               <span className="wb-atk">ATK:{player.atk}</span>
@@ -547,17 +869,39 @@ export default function BattleScreen() {
         <>
           <div className="wb-section-label">CHOOSE A MOVE</div>
           <div className="wb-moves">
-            {playerSp.moves.map((m) => (
-              <button
-                key={m.name}
-                className="wb-move-btn"
-                disabled={battle.busy || !!battle.outcome}
-                onClick={() => onFight(m)}
-              >
-                <div className="wb-move-name">{m.name}</div>
-                <div className="wb-move-pwr">PWR: {m.power}</div>
-              </button>
-            ))}
+            {playerSp.moves.map((m) => {
+              const tColor = typeColor(m.type);
+              const max = maxPpFor(m);
+              const pp = ppMap[player.uid]?.[m.name] ?? max;
+              const noPp = pp <= 0;
+              const eff = effectiveness(m.type, enemySp.type);
+              const hint = effectivenessHint(eff);
+              return (
+                <button
+                  key={m.name}
+                  className="wb-move-btn"
+                  disabled={battle.busy || !!battle.outcome || noPp}
+                  onClick={() => onFight(m)}
+                  style={{
+                    background: `linear-gradient(135deg, ${tColor}38 0%, ${tColor}18 100%)`,
+                    borderColor: `${tColor}99`,
+                    boxShadow: `0 0 0 1px ${tColor}33 inset`,
+                    opacity: noPp ? 0.45 : 1,
+                  }}
+                >
+                  <div className="wb-move-name" style={{ color: tColor }}>{m.name}</div>
+                  <div className="wb-move-meta-row">
+                    <span className="wb-move-pwr">PWR: {m.power}</span>
+                    <span className="wb-move-pp" style={{ color: pp <= max / 3 ? "#fb7185" : "#cbd5e1" }}>
+                      PP {pp}/{max}
+                    </span>
+                  </div>
+                  {hint && (
+                    <div className="wb-move-eff" style={{ color: hint.color }}>{hint.text}</div>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           <div className="wb-bottom-row">
@@ -655,6 +999,21 @@ export default function BattleScreen() {
           </div>
           <button className="wb-bottom-btn" onClick={() => setMenu("main")}>← Back</button>
         </>
+      )}
+
+      {/* Level-up banner overlay */}
+      {levelUp && (
+        <div className="pq-levelup-banner" role="status" aria-live="polite">
+          <div className="pq-levelup-title">⭐ {levelUp.name} grew to Lv {levelUp.to}!</div>
+          <div className="pq-levelup-grid">
+            <div>HP <span>+{levelUp.deltas.hp}</span></div>
+            <div>ATK <span>+{levelUp.deltas.atk}</span></div>
+            <div>DEF <span>+{levelUp.deltas.def}</span></div>
+            <div>SpA <span>+{levelUp.deltas.spa}</span></div>
+            <div>SpD <span>+{levelUp.deltas.spd}</span></div>
+            <div>SPE <span>+{levelUp.deltas.spe}</span></div>
+          </div>
+        </div>
       )}
     </div>
   );

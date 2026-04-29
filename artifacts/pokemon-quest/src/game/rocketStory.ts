@@ -6,6 +6,7 @@ interface Trigger {
   key: string;
   when: (s: GameState) => boolean;
   lines: string[]; // each line will be tagged "[Rocket] ..." for red coloring
+  extraDispatch?: (dispatch: Dispatch) => void;
 }
 
 // Lines prefixed with "[Rocket]" are colored red by CommandBox.
@@ -41,6 +42,18 @@ const TRIGGERS: Trigger[] = [
     ],
   },
   {
+    key: "mr-fuji-expshare",
+    when: (s) =>
+      !s.expShareOwned &&
+      (s.routeProgress["lavender"]?.trainersDefeated || []).includes("lav-rocket-tower"),
+    lines: [
+      "Mr. Fuji: \"You've saved the Pokémon Tower from Team Rocket!\"",
+      "Mr. Fuji: \"Please, take this — an EXP Share. Share your strength with all your team.\"",
+      "▶ You received the EXP SHARE! (Key Item — always active)",
+    ],
+    extraDispatch: (dispatch) => dispatch({ type: "GIVE_EXP_SHARE" }),
+  },
+  {
     key: "after-koga-silph",
     when: (s) => s.badges.includes("Soul Badge"),
     lines: [
@@ -73,5 +86,9 @@ export function runRocketStoryFor(state: GameState, dispatch: Dispatch) {
     if (!t.when(state)) continue;
     dispatch({ type: "SET_ROCKET_FLAG", key: t.key });
     dispatch({ type: "LOG", lines: t.lines });
+    if (t.extraDispatch) t.extraDispatch(dispatch);
+    if (t.key === "mr-fuji-expshare") {
+      dispatch({ type: "TOAST", text: "Received EXP Share from Mr. Fuji!" });
+    }
   }
 }

@@ -1,0 +1,201 @@
+You are working on a Pokémon Quest browser game built in JavaScript/HTML/CSS hosted on Replit. Implement the following features and fixes exactly as described:
+
+───────────────────────────────────────────
+1. HP BAR COLOR TRANSITION
+───────────────────────────────────────────
+HP bars must dynamically change color based on remaining HP percentage:
+- Above 50% HP → green (#4caf50)
+- Between 20–50% HP → yellow (#ffeb3b)
+- Below 20% HP → red (#f44336)
+Apply this to both player and enemy Pokémon HP bars in battle.
+
+───────────────────────────────────────────
+2. MOVE TYPE COLORS + PP SYSTEM
+───────────────────────────────────────────
+Each move button in battle must:
+- Show a colored type badge using these colors:
+  Water:#6390F0, Fire:#EE8130, Grass:#7AC74C, Normal:#A8A77A,
+  Electric:#F7D02C, Psychic:#F95587, Ghost:#735797,
+  Dragon:#6F35FC, Fighting:#C22E28, Rock:#B6A136,
+  Ice:#96D9D6, Bug:#A6B91A, Poison:#A33EA1, Ground:#E2BF65,
+  Flying:#A98FF3, Steel:#B7B7CE, Dark:#705746, Fairy:#D685AD
+- Show remaining PP as "PP: 15/15" below the move name
+- Disable the move button (grayed out) when PP reaches 0
+- PP restores fully at PokéCenter
+
+───────────────────────────────────────────
+3. STARTER SELECTION SCREEN
+───────────────────────────────────────────
+Before entering Pallet Town for the first time, show a full-screen
+starter selection screen with:
+- Title: "Choose your first partner Pokémon!"
+- Four cards: Charmander (Fire, Lv5), Squirtle (Water, Lv5),
+  Bulbasaur (Grass, Lv5), Pikachu (Electric, Lv5)
+- Each card shows: sprite image, name, type badge, base HP stat
+- Hovering a card highlights it with a glowing border
+- A "Choose [Name]!" confirm button appears after selecting a card
+- Selection is saved to game state and localStorage
+
+───────────────────────────────────────────
+4. STATUS CONDITIONS
+───────────────────────────────────────────
+Add the following status conditions to the battle system:
+- BRN (Burn): loses 1/16 max HP at end of each turn, shown as 🔴 BRN
+- PAR (Paralysis): 25% chance to skip turn, shown as 🟡 PAR
+- PSN (Poison): loses 1/8 max HP at end of each turn, shown as 🟣 PSN
+- SLP (Sleep): skips 1–3 turns, shown as 🔵 SLP
+- FRZ (Freeze): skips turns until thawed (20% chance per turn), shown as 🔵 FRZ
+Display the colored badge next to the afflicted Pokémon's name in battle.
+Only one status condition can be active per Pokémon at a time.
+
+───────────────────────────────────────────
+5. CATCH ANIMATION
+───────────────────────────────────────────
+When the player throws a Pokéball at a wild Pokémon:
+1. Show a Pokéball image flying toward the enemy sprite
+2. Enemy sprite disappears into the ball
+3. Ball shakes 1–3 times (CSS animation: rotate ±15deg, 0.4s each shake)
+4. On success: ball clicks shut, glows gold, "Gotcha! [Name] was caught!"
+5. On failure: ball bursts open, enemy reappears, "Oh no! [Name] broke free!"
+Base catch success on the standard catch rate formula using current HP %.
+
+───────────────────────────────────────────
+6. TYPE EFFECTIVENESS HINTS ON MOVES
+───────────────────────────────────────────
+On each move button, show a small effectiveness label based on the
+enemy's type(s):
+- "▲▲ Super Effective!" in green if ×2 or ×4
+- "▼ Not Very Effective" in red if ×0.5 or ×0.25
+- "✗ No Effect" in gray if ×0
+- No label shown for ×1 (neutral)
+Use the standard Pokémon type chart for all calculations.
+
+───────────────────────────────────────────
+7. EXP BAR IN BATTLE
+───────────────────────────────────────────
+Show a thin blue XP bar directly below the player Pokémon's HP bar
+in battle. The bar fills proportionally between current XP and the
+XP required for the next level. When XP is gained after a battle,
+animate the bar filling up smoothly (CSS transition 0.8s ease).
+
+───────────────────────────────────────────
+8. LEVEL-UP BANNER
+───────────────────────────────────────────
+When a Pokémon levels up, display an animated overlay banner:
+- "⬆ [Name] grew to Lv.[X]!"
+- Below it, show stat increases: +HP, +ATK, +DEF, +SpA, +SpD, +Spe
+- Banner slides in from the top, holds for 2.5 seconds, then fades out
+- Play a level-up chime sound if audio is enabled
+
+───────────────────────────────────────────
+9. PLAYER NAME ENTRY SCREEN
+───────────────────────────────────────────
+On New Game, before starter selection, show a name entry screen:
+- "What is your name, Trainer?"
+- Text input field (max 12 characters, alphanumeric only)
+- "Confirm" button proceeds to starter selection
+- Name is stored in player state and used in all dialogue and the Trainer Card
+
+───────────────────────────────────────────
+10. GYM LEADER BATTLE INTRO SCREEN
+───────────────────────────────────────────
+Before every Gym Leader battle, show a pre-battle intro screen:
+- Leader name and title (e.g. "Brock — Rock-type Gym Leader")
+- Their badge name and image (e.g. Boulder Badge)
+- Flavour quote from the leader
+- An "Accept Challenge" button to begin the battle
+Leaders: Brock (Pewter), Misty (Cerulean), Lt. Surge (Vermilion),
+Erika (Celadon), Koga (Fuchsia), Sabrina (Saffron),
+Blaine (Cinnabar), Giovanni (Viridian)
+
+───────────────────────────────────────────
+11. TEAM HP BARS ON PARTY SLOTS
+───────────────────────────────────────────
+In the party row shown on the map/hub screen, display a small HP bar
+under each Pokémon icon. The bar uses the same green/yellow/red
+color logic as battle HP bars. Fainted Pokémon slots are grayed out
+with a faint ✗ overlay.
+
+───────────────────────────────────────────
+12. EXP SHARE — KEY ITEM
+───────────────────────────────────────────
+Add the Exp. Share as a Key Item with these exact rules:
+
+OBTAINING:
+- Mr. Fuji gives it to the player in Lavender Town after they
+  defeat the Team Rocket Grunt blocking the stairs in Pokémon Tower
+  (Story Beat 4). It is added automatically — no shop purchase needed.
+
+STORAGE:
+- Stored in a dedicated KEY ITEMS section of the bag/inventory UI
+- Cannot be sold, tossed, or held by a Pokémon
+- Displayed with a 🔑 icon and labeled "Exp. Share — KEY ITEM"
+
+BEHAVIOR (auto-active once obtained, no toggle needed):
+- After every battle victory, distribute XP as follows:
+  • The Pokémon that fought gets 100% of the base XP
+  • Every OTHER non-fainted party member gets 50% of the base XP
+  • Fainted Pokémon (HP = 0) receive NO experience at all
+- EV yields from the defeated Pokémon are also distributed to every
+  Pokémon that receives XP (battler + non-fainted party members)
+- This applies to both wild battles and trainer battles
+
+IMPLEMENTATION:
+function distributeExp(battler, defeatedPokemon, party) {
+  const baseExp = calcBaseExp(defeatedPokemon);
+  battler.gainExp(baseExp);
+  battler.gainEVs(defeatedPokemon.evYield);
+  if (playerState.keyItems.expShare) {
+    const shareExp = Math.floor(baseExp * 0.5);
+    party.forEach(p => {
+      if (p !== battler && p.currentHP > 0) {
+        p.gainExp(shareExp);
+        p.gainEVs(defeatedPokemon.evYield);
+      }
+    });
+  }
+}
+
+───────────────────────────────────────────
+13. BULBAPEDIA LOCATION IMAGES
+───────────────────────────────────────────
+Replace the current generated town/route background art with official
+map images from Bulbapedia archives. Use imageRendering: 'pixelated'
+on all images. Map each zone name to its URL:
+
+const LOCATION_IMAGES = {
+  "Pallet Town":    "https://archives.bulbagarden.net/media/upload/0/00/Pallet_Town_FRLG.png",
+  "Route 1":        "https://archives.bulbagarden.net/media/upload/4/4c/Kanto_Route_1_Map.png",
+  "Viridian City":  "https://archives.bulbagarden.net/media/upload/8/8d/Viridian_City_FRLG.png",
+  "Route 2":        "https://archives.bulbagarden.net/media/upload/0/09/Kanto_Route_2_Map.png",
+  "Pewter City":    "https://archives.bulbagarden.net/media/upload/e/e7/Pewter_City_FRLG.png",
+  "Route 3":        "https://archives.bulbagarden.net/media/upload/8/80/Kanto_Route_3_Map.png",
+  "Mt. Moon":       "https://archives.bulbagarden.net/media/upload/8/8a/Mt_Moon_1F_FRLG.png",
+  "Route 4":        "https://archives.bulbagarden.net/media/upload/a/a8/Kanto_Route_4_Map.png",
+  "Cerulean City":  "https://archives.bulbagarden.net/media/upload/5/53/Cerulean_City_FRLG.png",
+  "Routes 5 & 6":   "https://archives.bulbagarden.net/media/upload/4/45/Kanto_Route_5_Map.png",
+  "Vermilion City": "https://archives.bulbagarden.net/media/upload/1/12/Vermilion_City_FRLG.png",
+  "Routes 7 & 8":   "https://archives.bulbagarden.net/media/upload/3/36/Kanto_Route_7_Map.png",
+  "Lavender Town":  "https://archives.bulbagarden.net/media/upload/1/16/Lavender_Town_FRLG.png",
+  "Routes 9 & 10":  "https://archives.bulbagarden.net/media/upload/2/27/Kanto_Route_9_Map.png",
+  "Celadon City":   "https://archives.bulbagarden.net/media/upload/a/a5/Celadon_City_FRLG.png",
+  "Routes 13-15":   "https://archives.bulbagarden.net/media/upload/0/05/Kanto_Route_13_Map.png",
+  "Fuchsia City":   "https://archives.bulbagarden.net/media/upload/3/3b/Fuchsia_City_FRLG.png",
+  "Routes 19-21":   "https://archives.bulbagarden.net/media/upload/e/ed/Kanto_Route_19_Map.png",
+  "Cinnabar Island":"https://archives.bulbagarden.net/media/upload/3/31/Cinnabar_Island_FRLG.png",
+  "Routes 22 & 23": "https://archives.bulbagarden.net/media/upload/f/f8/Kanto_Route_22_Map.png",
+  "Indigo Plateau": "https://archives.bulbagarden.net/media/upload/6/6c/Indigo_Plateau_FRLG.png",
+};
+
+If any image fails to load (onerror), fall back to the existing
+generated CSS scene for that zone — never show a broken image icon.
+
+───────────────────────────────────────────
+GENERAL RULES
+───────────────────────────────────────────
+- Do not break any existing features (battle log, route progress,
+  fast travel, autosave, Pokédex, team management, stat system)
+- Autosave to localStorage after every change as before
+- All new UI must match the existing dark theme (#0d0d1a background,
+  pixel/monospace fonts, green/red accent colors)
+- Test each feature after implementing it before moving to the next
