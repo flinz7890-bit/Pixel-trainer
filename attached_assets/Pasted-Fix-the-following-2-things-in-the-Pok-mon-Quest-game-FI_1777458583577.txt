@@ -1,0 +1,119 @@
+Fix the following 2 things in the Pokémon Quest game:
+
+─────────────────────────────────────────
+FIX 1: LOCATION IMAGES NOT SHOWING
+─────────────────────────────────────────
+The Bulbapedia location images are not rendering in the town/route
+scene banner. The current CSS night sky background is still showing
+for all locations including Viridian City.
+
+Find the zone scene component — the large rectangular banner that
+shows the location art (currently a dark CSS night scene with a moon
+and buildings). It is likely rendered using inline CSS background or
+a canvas/div element.
+
+Replace it with an <img> tag as the background of that container:
+
+  const locationImg = LOCATION_IMAGES[currentZone?.name];
+
+  // In the JSX, inside the scene container:
+  {locationImg && (
+    <img
+      src={locationImg}
+      alt={currentZone.name}
+      onError={(e) => { e.target.style.display = 'none'; }}
+      style={{
+        position: 'absolute',
+        top: 0, left: 0,
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+        imageRendering: 'pixelated',
+        zIndex: 0,
+        borderRadius: 'inherit',
+      }}
+    />
+  )}
+
+Make sure the scene container has position: relative so the image
+sits behind the location name tag and other overlaid elements.
+
+Use this LOCATION_IMAGES mapping:
+const LOCATION_IMAGES = {
+  "Pallet Town":    "https://archives.bulbagarden.net/media/upload/0/00/Pallet_Town_FRLG.png",
+  "Route 1":        "https://archives.bulbagarden.net/media/upload/4/4c/Kanto_Route_1_Map.png",
+  "Viridian City":  "https://archives.bulbagarden.net/media/upload/8/8d/Viridian_City_FRLG.png",
+  "Route 2":        "https://archives.bulbagarden.net/media/upload/0/09/Kanto_Route_2_Map.png",
+  "Pewter City":    "https://archives.bulbagarden.net/media/upload/e/e7/Pewter_City_FRLG.png",
+  "Route 3":        "https://archives.bulbagarden.net/media/upload/8/80/Kanto_Route_3_Map.png",
+  "Mt. Moon":       "https://archives.bulbagarden.net/media/upload/8/8a/Mt_Moon_1F_FRLG.png",
+  "Route 4":        "https://archives.bulbagarden.net/media/upload/a/a8/Kanto_Route_4_Map.png",
+  "Cerulean City":  "https://archives.bulbagarden.net/media/upload/5/53/Cerulean_City_FRLG.png",
+  "Routes 5 & 6":   "https://archives.bulbagarden.net/media/upload/4/45/Kanto_Route_5_Map.png",
+  "Vermilion City": "https://archives.bulbagarden.net/media/upload/1/12/Vermilion_City_FRLG.png",
+  "Routes 7 & 8":   "https://archives.bulbagarden.net/media/upload/3/36/Kanto_Route_7_Map.png",
+  "Lavender Town":  "https://archives.bulbagarden.net/media/upload/1/16/Lavender_Town_FRLG.png",
+  "Routes 9 & 10":  "https://archives.bulbagarden.net/media/upload/2/27/Kanto_Route_9_Map.png",
+  "Celadon City":   "https://archives.bulbagarden.net/media/upload/a/a5/Celadon_City_FRLG.png",
+  "Routes 13-15":   "https://archives.bulbagarden.net/media/upload/0/05/Kanto_Route_13_Map.png",
+  "Fuchsia City":   "https://archives.bulbagarden.net/media/upload/3/3b/Fuchsia_City_FRLG.png",
+  "Routes 19-21":   "https://archives.bulbagarden.net/media/upload/e/ed/Kanto_Route_19_Map.png",
+  "Cinnabar Island":"https://archives.bulbagarden.net/media/upload/3/31/Cinnabar_Island_FRLG.png",
+  "Routes 22 & 23": "https://archives.bulbagarden.net/media/upload/f/f8/Kanto_Route_22_Map.png",
+  "Indigo Plateau": "https://archives.bulbagarden.net/media/upload/6/6c/Indigo_Plateau_FRLG.png",
+};
+
+─────────────────────────────────────────
+FEATURE 2: FULL-SCREEN LOADING SCREEN
+─────────────────────────────────────────
+Add a dramatic full-screen loading screen that appears when the game
+first loads, before the title screen or game UI is shown.
+
+DESIGN — themed for Pokémon Quest (dark Kanto night adventure style):
+
+Background:
+- Full screen dark gradient: deep navy at top (#0a0a2e) to dark forest
+  green at bottom (#0d1f0d), with a large glowing full moon in the
+  upper center (CSS radial gradient circle, soft yellow-white glow)
+- Subtle pixel-art style silhouettes of Kanto mountains and trees
+  along the bottom edge (use CSS box shapes or SVG, dark gray #1a1a2e)
+- Faint animated floating sparkles/stars (5–8 small white dots,
+  CSS keyframe animation, random positions, slow fade in/out)
+
+Logo area (centered, upper-middle of screen):
+- "POKÉMON" in bold pixel font, hot pink/magenta (#ff6b9d), 
+  letter-spacing 6px, text-shadow glow
+- "— QUEST —" directly below in bright red (#e53935), larger size,
+  heavy font weight, same pixel style
+- Soft pulsing glow animation on the title (CSS keyframe scale 1→1.03)
+
+Pokémon silhouettes:
+- Show 4 small pixel-art Pokémon sprite silhouettes at the bottom
+  of the screen representing the 4 starters:
+  Charmander: https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png
+  Squirtle:   https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png
+  Bulbasaur:  https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png
+  Pikachu:    https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png
+- Apply CSS filter: brightness(0) to make them dark silhouettes
+- Space them evenly, image-rendering: pixelated, size ~64px each
+- Gentle floating animation (translateY -6px and back, 2s loop each
+  with staggered delays)
+
+Loading bar (bottom area):
+- Label "LOADING..." in white monospace font, letter-spacing 4px,
+  small size (12px)
+- A full-width progress bar container: dark border (#333), height 6px,
+  border-radius 3px
+- Animated red fill (#e53935) that goes from 0% to 100% over 2.5
+  seconds using CSS animation (ease-in-out)
+- After loading completes (2.5s), fade the entire loading screen out
+  over 0.5s then remove it from DOM and show the normal game
+
+"TAP TO CONTINUE" text:
+- After the bar completes, replace "LOADING..." with
+  "TAP TO CONTINUE" in blinking animation (CSS opacity 1→0, 0.8s loop)
+- Tapping/clicking anywhere dismisses the loading screen immediately
+
+Do not change any existing game logic, title screen, or save system.
+The loading screen is purely a visual intro that sits on top of
+everything for 2.5 seconds then disappears.

@@ -1769,3 +1769,165 @@ body::before {
   border-top: 1px solid rgba(148,163,184,0.15);
 }
 .pq-gym-intro-footer .pq-btn { flex: 1; }
+
+/* =========================================================
+   Loading Screen
+   ========================================================= */
+.pq-loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 56px 24px 44px;
+  background: linear-gradient(180deg, #0a0a2e 0%, #0c160c 60%, #0d1f0d 100%);
+  overflow: hidden;
+  transition: opacity 0.5s ease;
+}
+.pq-loading-screen.pq-loading-fade {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Moon */
+.pq-loading-moon {
+  position: absolute;
+  top: 44px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 38%, #fffff0, #fffde7 50%, #fbbf24 80%, #92400e);
+  box-shadow: 0 0 40px rgba(251,191,36,0.5), 0 0 110px rgba(251,191,36,0.18);
+}
+
+/* Stars */
+.pq-loading-star {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #fff;
+  animation: pq-star-twinkle 2s ease-in-out infinite alternate;
+}
+@keyframes pq-star-twinkle {
+  from { opacity: 0.2; transform: scale(0.8); }
+  to   { opacity: 1;   transform: scale(1.3); }
+}
+
+/* Mountains */
+.pq-loading-mountains {
+  position: absolute;
+  bottom: 116px;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: flex-end;
+}
+.pq-loading-mt {
+  width: 0;
+  height: 0;
+  border-style: solid;
+  flex-shrink: 0;
+}
+
+/* Logo */
+.pq-loading-logo {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  margin-top: 72px;
+  animation: pq-logo-pulse 2s ease-in-out infinite;
+}
+@keyframes pq-logo-pulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.03); }
+}
+.pq-loading-logo-top {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 6px;
+  color: #ff6b9d;
+  text-shadow: 0 0 18px rgba(255,107,157,0.75), 0 0 40px rgba(255,107,157,0.3);
+}
+.pq-loading-logo-bottom {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  font-weight: 900;
+  letter-spacing: 4px;
+  color: #e53935;
+  text-shadow: 0 0 20px rgba(229,57,53,0.8), 0 0 55px rgba(229,57,53,0.3);
+  margin-top: 2px;
+}
+
+/* Starter silhouettes */
+.pq-loading-starters {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 20px;
+  position: relative;
+  z-index: 1;
+}
+.pq-loading-sprite {
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+  filter: brightness(0);
+}
+.pq-loading-sprite:nth-child(1) { animation: pq-float 2s ease-in-out infinite; animation-delay: 0s;    }
+.pq-loading-sprite:nth-child(2) { animation: pq-float 2s ease-in-out infinite; animation-delay: 0.5s;  }
+.pq-loading-sprite:nth-child(3) { animation: pq-float 2s ease-in-out infinite; animation-delay: 1s;    }
+.pq-loading-sprite:nth-child(4) { animation: pq-float 2s ease-in-out infinite; animation-delay: 1.5s;  }
+@keyframes pq-float {
+  0%, 100% { transform: translateY(0);    }
+  50%       { transform: translateY(-6px); }
+}
+
+/* Progress bar area */
+.pq-loading-bottom {
+  width: 100%;
+  max-width: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+.pq-loading-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 4px;
+  color: #fff;
+}
+.pq-loading-label.pq-blink {
+  animation: pq-blink 0.8s ease-in-out infinite;
+}
+@keyframes pq-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+.pq-loading-bar-wrap {
+  width: 100%;
+  height: 6px;
+  background: #222;
+  border: 1px solid #444;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.pq-loading-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: #e53935;
+  border-radius: 3px;
+  animation: pq-load-fill 2.5s ease-in-out forwards;
+}
+@keyframes pq-load-fill {
+  from { width: 0%;   }
+  to   { width: 100%; }
+}

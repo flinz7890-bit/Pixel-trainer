@@ -77,30 +77,14 @@ function dialogueFor(loc: ReturnType<typeof getLoc>, cleared: boolean, badges: n
 function getLoc(id: string) { return LOCATIONS.find((l) => l.id === id)!; }
 
 function CitySkyline({ isTown, locName, bgImage }: { isTown: boolean; locName: string; bgImage?: string }) {
-  const [imgFailed, setImgFailed] = useState(false);
-  // If a real-image background is configured AND it loads, render the photo
-  // overlaid with a city-name badge. Otherwise fall back to the procedural
-  // CSS skyline below.
-  if (bgImage && !imgFailed) {
-    return (
-      <div className="ed-city-img-wrap ed-bg-image">
-        <img
-          src={bgImage}
-          alt={locName}
-          className="ed-bg-img"
-          loading="lazy"
-          style={{ width: "100%", height: "100%", objectFit: "cover", imageRendering: "pixelated", borderRadius: "inherit" }}
-          onError={() => setImgFailed(true)}
-        />
-        <div className="ed-bg-overlay" />
-        <div className="ed-city-name-badge">
-          <span className="pin">📍</span> {locName.toUpperCase()}
-        </div>
-      </div>
-    );
-  }
+  // CSS scene is always rendered as the fallback background.
+  // When bgImage is present, it's overlaid as an absolutely-positioned
+  // element that covers the CSS scene. If it fails to load, onError
+  // hides it via DOM style so the CSS scene shows through — no React
+  // state needed, so the fallback is immune to stale-state bugs.
   return (
-    <div className={`ed-city-img-wrap${isTown ? "" : " ed-day"}`}>
+    <div className={`ed-city-img-wrap${isTown ? "" : " ed-day"}`} style={{ position: "relative" }}>
+      {/* CSS fallback scene */}
       <div className="ed-stars" />
       <div className="ed-aurora" />
       <div className="ed-moon" />
@@ -126,7 +110,26 @@ function CitySkyline({ isTown, locName, bgImage }: { isTown: boolean; locName: s
         </div>
       )}
       <div className="ed-ground" />
-      <div className="ed-city-name-badge">
+      {/* Map image overlay — covers CSS scene when it loads */}
+      {bgImage && (
+        <img
+          src={bgImage}
+          alt={locName}
+          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+          style={{
+            position: "absolute",
+            top: 0, left: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            imageRendering: "pixelated",
+            zIndex: 1,
+            borderRadius: "inherit",
+          }}
+        />
+      )}
+      {/* Name badge — always above the image */}
+      <div className="ed-city-name-badge" style={{ zIndex: 2 }}>
         <span className="pin">📍</span> {locName.toUpperCase()}
       </div>
     </div>
