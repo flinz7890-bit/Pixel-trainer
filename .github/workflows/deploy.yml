@@ -31,7 +31,7 @@ jobs:
         run: |
           cd artifacts/pokemon-quest
           pnpm install --no-frozen-lockfile
-          pnpm run build
+          ./node_modules/.bin/vite build
         env:
           NODE_ENV: production
           PORT: 3000
