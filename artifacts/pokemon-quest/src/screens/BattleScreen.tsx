@@ -412,22 +412,26 @@ export default function BattleScreen() {
   };
 
   // End-of-turn HP loss from BRN/PSN. Returns true if target fainted.
-  const tickPlayerStatus = async (): Promise<boolean> => {
+  // currentHp must be passed when the caller already dispatched an HP change this turn
+  // (stale closure: player/enemy.hp reflects the pre-dispatch value until next render).
+  const tickPlayerStatus = async (currentHp?: number): Promise<boolean> => {
     const s = player.status;
     if (s !== "BRN" && s !== "PSN") return false;
+    const baseHp = currentHp !== undefined ? currentHp : player.hp;
     const loss = Math.max(1, Math.floor(player.maxHp / (s === "BRN" ? 16 : 8)));
-    const newHp = Math.max(0, player.hp - loss);
+    const newHp = Math.max(0, baseHp - loss);
     dispatch({ type: "PATCH_PLAYER_ACTIVE", patch: { hp: newHp } });
     showFloatingDamage("player", loss, 1);
     log([`${playerSp.name} is hurt by ${s === "BRN" ? "its burn" : "poison"}! -${loss} HP`]);
     await sleep(700);
     return newHp <= 0;
   };
-  const tickEnemyStatus = async (): Promise<boolean> => {
+  const tickEnemyStatus = async (currentHp?: number): Promise<boolean> => {
     const s = enemy.status;
     if (s !== "BRN" && s !== "PSN") return false;
+    const baseHp = currentHp !== undefined ? currentHp : enemy.hp;
     const loss = Math.max(1, Math.floor(enemy.maxHp / (s === "BRN" ? 16 : 8)));
-    const newHp = Math.max(0, enemy.hp - loss);
+    const newHp = Math.max(0, baseHp - loss);
     dispatch({ type: "PATCH_BATTLE", patch: { enemy: { ...enemy, hp: newHp } } });
     showFloatingDamage("enemy", loss, 1);
     log([`Foe ${enemySp.name} is hurt by ${s === "BRN" ? "its burn" : "poison"}! -${loss} HP`]);
@@ -435,7 +439,9 @@ export default function BattleScreen() {
     return newHp <= 0;
   };
 
-  const enemyTurn = async () => {
+  // knownEnemyHp: pass the actual current enemy HP when the caller already
+  // dispatched a change to it (avoids stale-closure heal bug in tickEnemyStatus).
+  const enemyTurn = async (knownEnemyHp?: number) => {
     if (battle.outcome) return;
     setBusy(true);
     await sleep(500);
@@ -460,7 +466,7 @@ export default function BattleScreen() {
         await endBattleAfter("lost");
         return;
       }
-      await tickEnemyStatus();
+      await tickEnemyStatus(knownEnemyHp);
       setTurnNum((n) => n + 1);
       dispatch({ type: "PATCH_BATTLE", patch: { turn: "player", busy: false } });
       return;
@@ -504,8 +510,8 @@ export default function BattleScreen() {
       await endBattleAfter("lost");
       return;
     }
-    // End-of-turn: BRN/PSN ticks for player then enemy
-    const playerKO = await tickPlayerStatus();
+    // End-of-turn: BRN/PSN ticks — pass post-damage HP to avoid stale-closure healing.
+    const playerKO = await tickPlayerStatus(newHp);
     if (playerKO) {
       log([`${playerSp.name} fainted!`]);
       await sleep(500);
@@ -523,7 +529,7 @@ export default function BattleScreen() {
       await endBattleAfter("lost");
       return;
     }
-    await tickEnemyStatus();
+    await tickEnemyStatus(knownEnemyHp);
     setTurnNum((n) => n + 1);
     dispatch({ type: "PATCH_BATTLE", patch: { turn: "player", busy: false } });
   };
@@ -610,7 +616,7 @@ export default function BattleScreen() {
       return;
     }
     dispatch({ type: "PATCH_BATTLE", patch: { turn: "enemy" } });
-    await enemyTurn();
+    await enemyTurn(newEnemyHp);
   };
 
   const throwBall = async (ballId: string) => {

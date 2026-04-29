@@ -1,11 +1,45 @@
 import { useEffect, useMemo, useState } from "react";
 import { useGame, makePokemon, BattleState, isLocationCleared } from "@/game/state";
-import { GYMS, LOCATIONS, LOCATION_BG, SPECIES, TrainerNPC } from "@/game/data";
+import { GYMS, LOCATIONS, SPECIES, TrainerNPC } from "@/game/data";
 import { runRocketStoryFor } from "@/game/rocketStory";
 import PokeSprite from "@/components/PokeSprite";
 import Toast from "@/components/Toast";
 import TrainerSprite, { spriteForRouteTrainer } from "@/components/TrainerSprite";
 import { typeColor } from "@/components/TypeBadge";
+
+const LOCATION_IMAGES: Record<string, string> = {
+  "Pallet Town":    "https://archives.bulbagarden.net/media/upload/0/00/Pallet_Town_FRLG.png",
+  "Route 1":        "https://archives.bulbagarden.net/media/upload/4/4c/Kanto_Route_1_Map.png",
+  "Viridian City":  "https://archives.bulbagarden.net/media/upload/8/8d/Viridian_City_FRLG.png",
+  "Route 2":        "https://archives.bulbagarden.net/media/upload/0/09/Kanto_Route_2_Map.png",
+  "Pewter City":    "https://archives.bulbagarden.net/media/upload/e/e7/Pewter_City_FRLG.png",
+  "Route 3":        "https://archives.bulbagarden.net/media/upload/8/80/Kanto_Route_3_Map.png",
+  "Mt. Moon":       "https://archives.bulbagarden.net/media/upload/8/8a/Mt_Moon_1F_FRLG.png",
+  "Route 4":        "https://archives.bulbagarden.net/media/upload/a/a8/Kanto_Route_4_Map.png",
+  "Cerulean City":  "https://archives.bulbagarden.net/media/upload/5/53/Cerulean_City_FRLG.png",
+  "Route 5":        "https://archives.bulbagarden.net/media/upload/4/45/Kanto_Route_5_Map.png",
+  "Route 6":        "https://archives.bulbagarden.net/media/upload/4/45/Kanto_Route_5_Map.png",
+  "Vermilion City": "https://archives.bulbagarden.net/media/upload/1/12/Vermilion_City_FRLG.png",
+  "Route 7":        "https://archives.bulbagarden.net/media/upload/3/36/Kanto_Route_7_Map.png",
+  "Route 8":        "https://archives.bulbagarden.net/media/upload/3/36/Kanto_Route_7_Map.png",
+  "Lavender Town":  "https://archives.bulbagarden.net/media/upload/1/16/Lavender_Town_FRLG.png",
+  "Route 9":        "https://archives.bulbagarden.net/media/upload/2/27/Kanto_Route_9_Map.png",
+  "Route 10":       "https://archives.bulbagarden.net/media/upload/2/27/Kanto_Route_9_Map.png",
+  "Celadon City":   "https://archives.bulbagarden.net/media/upload/a/a5/Celadon_City_FRLG.png",
+  "Route 11":       "https://archives.bulbagarden.net/media/upload/0/05/Kanto_Route_13_Map.png",
+  "Route 12":       "https://archives.bulbagarden.net/media/upload/0/05/Kanto_Route_13_Map.png",
+  "Route 13":       "https://archives.bulbagarden.net/media/upload/0/05/Kanto_Route_13_Map.png",
+  "Route 14":       "https://archives.bulbagarden.net/media/upload/0/05/Kanto_Route_13_Map.png",
+  "Route 15":       "https://archives.bulbagarden.net/media/upload/0/05/Kanto_Route_13_Map.png",
+  "Fuchsia City":   "https://archives.bulbagarden.net/media/upload/3/3b/Fuchsia_City_FRLG.png",
+  "Route 19":       "https://archives.bulbagarden.net/media/upload/e/ed/Kanto_Route_19_Map.png",
+  "Route 20":       "https://archives.bulbagarden.net/media/upload/e/ed/Kanto_Route_19_Map.png",
+  "Cinnabar Island":"https://archives.bulbagarden.net/media/upload/3/31/Cinnabar_Island_FRLG.png",
+  "Route 21":       "https://archives.bulbagarden.net/media/upload/e/ed/Kanto_Route_19_Map.png",
+  "Route 22":       "https://archives.bulbagarden.net/media/upload/f/f8/Kanto_Route_22_Map.png",
+  "Route 23":       "https://archives.bulbagarden.net/media/upload/f/f8/Kanto_Route_22_Map.png",
+  "Indigo Plateau": "https://archives.bulbagarden.net/media/upload/6/6c/Indigo_Plateau_FRLG.png",
+};
 
 function pickEncounter(locId: string) {
   const loc = LOCATIONS.find((l) => l.id === locId)!;
@@ -55,7 +89,7 @@ function CitySkyline({ isTown, locName, bgImage }: { isTown: boolean; locName: s
           alt={locName}
           className="ed-bg-img"
           loading="lazy"
-          style={{ imageRendering: "pixelated" }}
+          style={{ width: "100%", height: "100%", objectFit: "cover", imageRendering: "pixelated", borderRadius: "inherit" }}
           onError={() => setImgFailed(true)}
         />
         <div className="ed-bg-overlay" />
@@ -255,7 +289,7 @@ export default function AdventureScreen() {
 
       {/* CITY CARD */}
       <div className="ed-city-card">
-        <CitySkyline isTown={inTown} locName={loc.name} bgImage={loc.bgImage || LOCATION_BG[loc.id]} />
+        <CitySkyline isTown={inTown} locName={loc.name} bgImage={LOCATION_IMAGES[loc.name]} />
         <div className="ed-dialogue">
           <div className="speaker">{dlg.speaker}</div>
           <div className="text">
