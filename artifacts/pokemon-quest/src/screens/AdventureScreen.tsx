@@ -1,10 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useGame, makePokemon, BattleState, isLocationCleared } from "@/game/state";
 import { GYMS, LOCATIONS, SPECIES, TrainerNPC } from "@/game/data";
 import { runRocketStoryFor } from "@/game/rocketStory";
-import PokemonCard from "@/components/PokemonCard";
+import PokeSprite from "@/components/PokeSprite";
 import Toast from "@/components/Toast";
 import TrainerSprite, { spriteForRouteTrainer } from "@/components/TrainerSprite";
+import { typeColor } from "@/components/TypeBadge";
 
 function pickEncounter(locId: string) {
   const loc = LOCATIONS.find((l) => l.id === locId)!;
@@ -22,23 +23,56 @@ function pickEncounter(locId: string) {
   return { speciesId: last.speciesId, level: last.minLevel };
 }
 
-function Particles() {
-  const dots = Array.from({ length: 18 });
+function shortMoney(n: number) {
+  if (n >= 100000) return `${Math.floor(n / 1000)}k`;
+  if (n >= 10000) return `${(n / 1000).toFixed(1)}k`;
+  return String(n);
+}
+function pad2(n: number) { return String(n).padStart(2, "0"); }
+
+function dialogueFor(loc: ReturnType<typeof getLoc>, cleared: boolean, badges: number, hasGym: boolean): { speaker: string; text: string } {
+  if (loc.isTown) {
+    if (hasGym) return { speaker: "Prof. Oak", text: `Welcome to ${loc.name}!\nThe Gym Leader here awaits a worthy challenger.` };
+    if (loc.id === "pallet") return { speaker: "Prof. Oak", text: `Your journey begins here in ${loc.name}.\nHead north when you're ready.` };
+    return { speaker: "Prof. Oak", text: `Welcome to ${loc.name}.\nRest, restock, and head out when ready.` };
+  }
+  if (cleared) return { speaker: "Hiker", text: `${loc.name} is quiet now.\nMove on to the next area!` };
+  if (badges === 0) return { speaker: "Prof. Oak", text: `Explore ${loc.name} and battle\nany trainers you find.` };
+  return { speaker: "Trainer Tip", text: `Wild Pokémon roam ${loc.name}.\nKeep your team healthy!` };
+}
+function getLoc(id: string) { return LOCATIONS.find((l) => l.id === id)!; }
+
+function CitySkyline({ isTown, locName }: { isTown: boolean; locName: string }) {
   return (
-    <div className="particles">
-      {dots.map((_, i) => (
-        <span
-          key={i}
-          style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-            animationDelay: `${Math.random() * 3}s`,
-            animationDuration: `${2 + Math.random() * 3}s`,
-            background: ["#4ade80", "#a855f7", "#22d3ee", "#facc15", "#f43f5e"][i % 5],
-            opacity: 0.5,
-          }}
-        />
-      ))}
+    <div className={`ed-city-img-wrap${isTown ? "" : " ed-day"}`}>
+      <div className="ed-stars" />
+      <div className="ed-aurora" />
+      <div className="ed-moon" />
+      <div className="ed-mountains-back">
+        <div className="ed-mt" style={{ borderLeft: "55px solid transparent", borderRight: "55px solid transparent", borderBottom: `58px solid ${isTown ? "#091528" : "#5a8a4a"}`, marginLeft: 10 }} />
+        <div className="ed-mt" style={{ borderLeft: "70px solid transparent", borderRight: "70px solid transparent", borderBottom: `72px solid ${isTown ? "#0b1a30" : "#4a7a3e"}`, marginLeft: -20 }} />
+        <div className="ed-mt" style={{ borderLeft: "50px solid transparent", borderRight: "50px solid transparent", borderBottom: `52px solid ${isTown ? "#091528" : "#5a8a4a"}`, marginLeft: 40 }} />
+        <div className="ed-mt" style={{ borderLeft: "60px solid transparent", borderRight: "60px solid transparent", borderBottom: `65px solid ${isTown ? "#0d1f38" : "#67a05a"}`, marginLeft: -10 }} />
+      </div>
+      {isTown && (
+        <div className="ed-skyline">
+          <div className="ed-bld ed-bld-tall" style={{ width: 18, height: 52 }} />
+          <div className="ed-bld" style={{ width: 24, height: 64 }} />
+          <div className="ed-bld ed-bld-tall" style={{ width: 14, height: 42 }} />
+          <div className="ed-bld ed-bld-tall" style={{ width: 28, height: 70 }} />
+          <div className="ed-bld" style={{ width: 16, height: 48 }} />
+          <div style={{ flex: 1 }} />
+          <div className="ed-bld" style={{ width: 16, height: 44 }} />
+          <div className="ed-bld ed-bld-tall" style={{ width: 26, height: 68 }} />
+          <div className="ed-bld" style={{ width: 20, height: 55 }} />
+          <div className="ed-bld ed-bld-tall" style={{ width: 22, height: 60 }} />
+          <div className="ed-bld" style={{ width: 14, height: 38 }} />
+        </div>
+      )}
+      <div className="ed-ground" />
+      <div className="ed-city-name-badge">
+        <span className="pin">📍</span> {locName.toUpperCase()}
+      </div>
     </div>
   );
 }
@@ -50,7 +84,6 @@ export default function AdventureScreen() {
   const inTown = !!loc.isTown;
   const gym = loc.gymId ? GYMS.find((g) => g.id === loc.gymId) : undefined;
 
-  const totalCaught = Object.values(state.pokedex).filter((e) => e.caught).length;
   const progress = state.routeProgress[loc.id] || { trainersDefeated: [], explored: false, cleared: false };
   const trainers = loc.trainers || [];
   const remainingTrainers = trainers
@@ -60,7 +93,6 @@ export default function AdventureScreen() {
   const nextLoc = loc.nextLocationId ? LOCATIONS.find((l) => l.id === loc.nextLocationId) : undefined;
   const prevLoc = loc.prevLocationId ? LOCATIONS.find((l) => l.id === loc.prevLocationId) : undefined;
 
-  // Auto-award arrival badge for terminal cities (e.g., Pewter)
   useEffect(() => {
     if (loc.arrivalBadge && !state.badges.includes(loc.arrivalBadge) && !state.visited[loc.id]) {
       dispatch({ type: "ADD_BADGE", badge: loc.arrivalBadge });
@@ -72,7 +104,6 @@ export default function AdventureScreen() {
     } else if (!state.visited[loc.id]) {
       dispatch({ type: "MARK_VISITED", locationId: loc.id });
     }
-    // Trigger Team Rocket story beats (one-time per key)
     runRocketStoryFor(state, dispatch);
   }, [loc.id, state.badges.length, state.routeProgress[loc.id]?.cleared]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -100,13 +131,7 @@ export default function AdventureScreen() {
       turn: "player",
     };
     dispatch({ type: "SET_BATTLE", battle });
-    dispatch({
-      type: "LOG",
-      lines: [
-        `You explored ${loc.name}.`,
-        `A wild ${SPECIES[enc.speciesId].name.toUpperCase()} appeared!`,
-      ],
-    });
+    dispatch({ type: "LOG", lines: [`You explored ${loc.name}.`, `A wild ${SPECIES[enc.speciesId].name.toUpperCase()} appeared!`] });
     dispatch({ type: "SET_SCREEN", screen: "encounter" });
   };
 
@@ -136,13 +161,10 @@ export default function AdventureScreen() {
       enemyTeamRemaining: rest,
     };
     dispatch({ type: "SET_BATTLE", battle });
-    dispatch({
-      type: "LOG",
-      lines: [
-        t.isRocket ? `[Rocket] ${t.title} ${t.name} challenged you!` : `${t.title} ${t.name} challenged you!`,
-        t.isRocket ? `[Rocket] "${t.intro}"` : `"${t.intro}"`,
-      ],
-    });
+    dispatch({ type: "LOG", lines: [
+      t.isRocket ? `[Rocket] ${t.title} ${t.name} challenged you!` : `${t.title} ${t.name} challenged you!`,
+      t.isRocket ? `[Rocket] "${t.intro}"` : `"${t.intro}"`,
+    ]});
     dispatch({ type: "SET_SCREEN", screen: "battle" });
   };
 
@@ -158,167 +180,133 @@ export default function AdventureScreen() {
 
   const goTo = (screen: any) => dispatch({ type: "SET_SCREEN", screen });
 
+  const dlg = useMemo(() => dialogueFor(loc, cleared, state.badges.length, !!gym), [loc.id, cleared, state.badges.length, !!gym]);
+
+  const slots = Array.from({ length: 6 });
+  const balls = state.items?.pokeball ?? state.pokeballs ?? 0;
+  const pots = state.items?.potion ?? state.potions ?? 0;
+
+  const nextLocked = !nextLoc || (!inTown && !cleared) || (nextLoc && state.badges.length < (nextLoc.requiresBadges || 0));
+  const travelLabel = nextLoc
+    ? (state.badges.length < (nextLoc.requiresBadges || 0) ? `🔒 ${nextLoc.name}` :
+       (!inTown && !cleared) ? `🔒 ${nextLoc.name}` :
+       `▶ ${nextLoc.name}`)
+    : "★ End";
+
   return (
-    <div className="pq-fade flex flex-col gap-3 py-3 relative">
+    <div className="pq-fade flex flex-col gap-0 relative" style={{ paddingTop: 0 }}>
       <Toast />
 
-      {/* Header */}
-      <div className="pq-card relative overflow-hidden p-3">
-        <Particles />
-        <div className="relative flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <div
-              className="font-pixel text-[14px] sm:text-[16px] truncate"
-              style={{
-                background: "linear-gradient(180deg,#fb7185 0%,#f43f5e 60%,#be123c 100%)",
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                color: "transparent",
-                textShadow: "0 0 18px rgba(244,63,94,0.30)",
-              }}
-            >
-              POKÉMON — QUEST
-            </div>
-            <div className="text-[11px] mt-1 font-mono-pq" style={{ color: "#a1a1aa" }}>
-              <span style={{ color: "#22d3ee" }}>KANTO</span> · {loc.emoji} {loc.name}
-              {inTown ? " · TOWN" : " · ROUTE"}
-            </div>
-          </div>
-          <div
-            className="shrink-0 grid place-items-center px-3 py-1.5 rounded-full font-mono-pq text-[11px] font-bold"
-            style={{
-              background: "linear-gradient(180deg,#facc15,#eab308)",
-              color: "#3b1d00",
-              boxShadow: "0 0 18px rgba(250,204,21,0.40)",
-            }}
-            title="Caught"
-          >
-            ⓒ {totalCaught}
+      {/* TOP BAR */}
+      <div className="ed-topbar">
+        <div className="min-w-0">
+          <div className="ed-game-title">POKÉMON — QUEST</div>
+          <div className="ed-loc-line">
+            <span style={{ color: "#f472b6", fontSize: 6 }}>●</span>
+            KANTO <span className="sep">·</span> {loc.name} <span className="sep">·</span> {inTown ? "TOWN" : "ROUTE"}
           </div>
         </div>
-
-        <div
-          className="relative grid grid-cols-4 gap-2 mt-3 text-[11px] font-mono-pq"
-          style={{ color: "#d4d4d8" }}
-        >
-          <div className="pq-card-2 px-2 py-1.5 text-center">
-            <div style={{ color: "#71717a" }} className="text-[9px] uppercase">₽</div>
-            <div className="font-bold" style={{ color: "#facc15" }}>{state.money}</div>
-          </div>
-          <div className="pq-card-2 px-2 py-1.5 text-center">
-            <div style={{ color: "#71717a" }} className="text-[9px] uppercase">Balls</div>
-            <div className="font-bold">{state.pokeballs}</div>
-          </div>
-          <div className="pq-card-2 px-2 py-1.5 text-center">
-            <div style={{ color: "#71717a" }} className="text-[9px] uppercase">Potions</div>
-            <div className="font-bold">{state.potions}</div>
-          </div>
-          <div className="pq-card-2 px-2 py-1.5 text-center">
-            <div style={{ color: "#71717a" }} className="text-[9px] uppercase">Badges</div>
-            <div className="font-bold" style={{ color: "#eab308" }}>{state.badges.length}</div>
-          </div>
+        <div className="ed-coin-pill">
+          <span style={{ fontSize: 12 }}>🪙</span> {state.money.toLocaleString()}
         </div>
       </div>
 
-      {/* Team — horizontal scroll */}
-      <div>
-        <div className="flex items-center justify-between px-1 mb-1.5">
-          <div
-            className="text-[10px] font-mono-pq tracking-widest uppercase"
-            style={{ color: "#4ade80" }}
-          >
-            Team ({state.team.length}/6)
-          </div>
-          <div className="text-[9px] font-mono-pq" style={{ color: "#71717a" }}>
-            ← swipe →
-          </div>
+      {/* STAT ROW */}
+      <div className="ed-stat-row">
+        <div className="ed-stat-pill">
+          <span className="s-label">₽ Money</span>
+          <span className="s-value">{shortMoney(state.money)}</span>
         </div>
-        <div
-          className="flex gap-2 overflow-x-auto pb-1 px-0.5"
-          style={{
-            scrollSnapType: "x mandatory",
-            WebkitOverflowScrolling: "touch",
-            scrollbarWidth: "thin",
-          }}
-        >
-          {state.team.length === 0 && (
-            <div className="pq-card p-4 text-sm text-center w-full" style={{ color: "#a1a1aa" }}>
-              No Pokémon in your team.
-            </div>
-          )}
-          {state.team.map((p, i) => (
-            <div key={p.uid} style={{ scrollSnapAlign: "start" }}>
-              <PokemonCard p={p} active={i === 0} compact showMenu index={i} total={state.team.length} />
-            </div>
-          ))}
+        <div className="ed-stat-pill">
+          <span className="s-label">Balls</span>
+          <span className="s-value">{pad2(balls)}</span>
         </div>
-        {state.team.length > 1 && (
-          <div className="text-[9px] font-mono-pq text-center mt-1" style={{ color: "#71717a" }}>
-            Tap ⋯ on a card to view summary, set active, reorder, or release.
-          </div>
-        )}
-        <div style={{ display: "none" }}>
+        <div className="ed-stat-pill">
+          <span className="s-label">Pots</span>
+          <span className="s-value">{pad2(pots)}</span>
+        </div>
+        <div className="ed-stat-pill">
+          <span className="s-label">Badges</span>
+          <span className="s-value" style={{ color: "#22d3ee", textShadow: "0 0 8px rgba(34,211,238,0.40)" }}>{pad2(state.badges.length)}</span>
         </div>
       </div>
 
-      {/* Travel / Progression */}
-      <div className="pq-card p-3 flex flex-col gap-2">
-        <div
-          className="text-[10px] font-mono-pq tracking-widest uppercase"
-          style={{ color: "#22d3ee" }}
-        >
-          {inTown ? "Town Map" : "Route Progress"}
-        </div>
-
-        {/* Route progress detail */}
-        {!inTown && (
-          <div className="text-[11px] font-mono-pq" style={{ color: "#d4d4d8" }}>
-            <div className="flex items-center justify-between">
-              <span>
-                Trainers: {trainers.length - remainingTrainers.length}/{trainers.length}
+      {/* CITY CARD */}
+      <div className="ed-city-card">
+        <CitySkyline isTown={inTown} locName={loc.name} />
+        <div className="ed-dialogue">
+          <div className="speaker">{dlg.speaker}</div>
+          <div className="text">
+            {dlg.text.split("\n").map((line, i, arr) => (
+              <span key={i}>
+                {line}
+                {i < arr.length - 1 && <br />}
+                {i === arr.length - 1 && <span className="ed-cursor" />}
               </span>
-              <span>{progress.explored ? "✓ explored" : "not explored"}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* TEAM ROW */}
+      <div className="ed-team-row">
+        <span className="ed-team-label">Team:</span>
+        {slots.map((_, i) => {
+          const p = state.team[i];
+          if (!p) return <div key={i} className="ed-sprite-slot empty">+</div>;
+          const sp = SPECIES[p.speciesId];
+          const hpPct = Math.max(0, Math.min(100, (p.hp / p.maxHp) * 100));
+          const hpColor = hpPct > 50 ? "#4ade80" : hpPct > 20 ? "#facc15" : "#f87171";
+          const fainted = p.hp <= 0;
+          return (
+            <button
+              key={p.uid}
+              className={`ed-sprite-slot${i === 0 ? " active" : ""}${fainted ? " fainted" : ""}`}
+              onClick={() => i !== 0 && dispatch({ type: "SWAP_ACTIVE", withIndex: i })}
+              title={`${sp.name} Lv${p.level} · ${p.hp}/${p.maxHp} HP`}
+            >
+              <PokeSprite species={sp} size={40} />
+              <div className="hp-strip">
+                <span style={{ width: `${hpPct}%`, background: hpColor }} />
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* TOWN MAP / ROUTE PROGRESS */}
+      <div className="px-0">
+        <div className="ed-section-label">{inTown ? "Town Map" : "Route Progress"}</div>
+
+        {!inTown && (
+          <div className="font-mono-pq text-[11px] mb-2" style={{ color: "#d4d4d8" }}>
+            <div className="flex items-center justify-between">
+              <span>Trainers: {trainers.length - remainingTrainers.length}/{trainers.length}</span>
+              <span style={{ color: progress.explored ? "#4ade80" : "#71717a" }}>
+                {progress.explored ? "✓ explored" : "not explored"}
+              </span>
             </div>
-            <div className="mt-1 rounded-full overflow-hidden" style={{ height: 6, background: "#2a2a3a" }}>
-              <div
-                style={{
-                  width: `${
-                    ((trainers.length - remainingTrainers.length) / Math.max(1, trainers.length)) * 50 +
-                    (progress.explored ? 50 : 0)
-                  }%`,
-                  height: "100%",
-                  background: cleared ? "linear-gradient(90deg,#4ade80,#22c55e)" : "linear-gradient(90deg,#a855f7,#22d3ee)",
-                  transition: "width .4s",
-                }}
-              />
+            <div className="mt-1.5 rounded-full overflow-hidden" style={{ height: 6, background: "#2a2a3a" }}>
+              <div style={{
+                width: `${((trainers.length - remainingTrainers.length) / Math.max(1, trainers.length)) * 50 + (progress.explored ? 50 : 0)}%`,
+                height: "100%",
+                background: cleared ? "linear-gradient(90deg,#4ade80,#22c55e)" : "linear-gradient(90deg,#a855f7,#22d3ee)",
+                transition: "width .4s",
+              }} />
             </div>
           </div>
         )}
 
-        {/* Trainer challenges (routes only) */}
         {!inTown && remainingTrainers.length > 0 && (
-          <div className="flex flex-col gap-1.5 mt-1">
-            <div className="text-[10px] font-mono-pq" style={{ color: "#facc15" }}>
+          <div className="ed-trainer-list mb-2">
+            <div className="font-mono-pq text-[10px]" style={{ color: "#facc15", letterSpacing: 1 }}>
               ⚔ TRAINER{remainingTrainers.length > 1 ? "S" : ""} ON THIS ROUTE
             </div>
             {remainingTrainers.map((t) => {
               const spriteUrl = spriteForRouteTrainer(`${t.title} ${t.name}`);
               return (
-                <button
-                  key={t.id}
-                  onClick={() => challengeTrainer(t)}
-                  className="pq-card-2 flex items-center gap-3 p-2 text-left hover:brightness-110 transition"
-                  style={{ borderColor: "rgba(250,204,21,0.40)" }}
-                >
-                  <div
-                    className="shrink-0 grid place-items-center rounded-lg"
-                    style={{
-                      width: 56,
-                      height: 56,
-                      background: "radial-gradient(closest-side, rgba(250,204,21,0.18), transparent 70%)",
-                      border: "1px solid rgba(250,204,21,0.30)",
-                    }}
-                  >
+                <button key={t.id} onClick={() => challengeTrainer(t)} className="ed-trainer-row">
+                  <div className="av">
                     <TrainerSprite url={spriteUrl || undefined} fallbackEmoji={t.sprite || "🧑"} size="sm" alt={t.title} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -329,9 +317,7 @@ export default function AdventureScreen() {
                       {t.team.length} Pokémon · ₽{t.reward}
                     </div>
                   </div>
-                  <div className="text-[10px] font-mono-pq" style={{ color: "#facc15" }}>
-                    CHALLENGE ▶
-                  </div>
+                  <div className="text-[10px] font-mono-pq" style={{ color: "#facc15" }}>CHALLENGE ▶</div>
                 </button>
               );
             })}
@@ -339,133 +325,86 @@ export default function AdventureScreen() {
         )}
 
         {!inTown && remainingTrainers.length === 0 && trainers.length > 0 && (
-          <div
-            className="text-[11px] font-mono-pq mt-1"
-            style={{ color: "#4ade80" }}
-          >
+          <div className="font-mono-pq text-[11px] mb-2" style={{ color: "#4ade80" }}>
             ✓ All trainers on this route defeated.
           </div>
         )}
 
-        {/* Travel buttons */}
-        <div className="flex flex-col gap-1.5 mt-1">
-          {prevLoc && (
-            <button className="pq-btn pq-btn-ghost" onClick={() => travelTo(prevLoc.id)}>
-              ← Back to {prevLoc.name}
-            </button>
-          )}
-          {nextLoc && (() => {
-            const needBadges = nextLoc.requiresBadges || 0;
-            const badgeOk = state.badges.length >= needBadges;
-            const locked = (!inTown && !cleared) || !badgeOk;
-            const label =
-              !badgeOk ? `🔒 ${nextLoc.name} (${needBadges} badges required)` :
-              (!inTown && !cleared) ? `🔒 ${nextLoc.name} (clear route first)` :
-              inTown ? `▶ Travel to ${nextLoc.name}` : `▶ Continue to ${nextLoc.name}`;
-            return (
-              <button
-                className="pq-btn pq-btn-primary"
-                onClick={() => travelTo(nextLoc.id)}
-                disabled={locked}
-                title={locked ? "Locked" : undefined}
-              >
-                {label}
-              </button>
-            );
-          })()}
-          {!nextLoc && (
-            <div
-              className="text-[11px] text-center font-mono-pq"
-              style={{ color: "#facc15" }}
-            >
-              ★ End of journey for now
-            </div>
-          )}
+        <div className="ed-map-btns">
+          <button className="ed-map-btn" disabled={!prevLoc} onClick={() => prevLoc && travelTo(prevLoc.id)}>
+            ← BACK
+          </button>
+          <button className="ed-map-btn travel" disabled={nextLocked} onClick={() => nextLoc && travelTo(nextLoc.id)} title={nextLoc?.name}>
+            {nextLoc ? "▶ TRAVEL" : "★ END"}
+          </button>
+          <button className="ed-map-btn fast" onClick={() => {
+            if (!state.lastHealLocationId) {
+              dispatch({ type: "TOAST", text: "Visit a Poké Center first to set fast-travel." });
+              return;
+            }
+            const t = LOCATIONS.find((l) => l.id === state.lastHealLocationId);
+            if (!t) return;
+            dispatch({ type: "SET_LOCATION", id: t.id });
+            dispatch({ type: "LOG", lines: [`Fast-traveled to ${t.name}.`] });
+          }}>
+            ⚡ FAST
+          </button>
         </div>
+        {nextLoc && (
+          <div className="font-mono-pq text-[9px] text-center mt-1.5" style={{ color: "#71717a" }}>
+            Next: {travelLabel}
+          </div>
+        )}
       </div>
 
-      {/* 3x3 nav grid */}
-      <div className="grid grid-cols-3 gap-2 mt-1">
-        <button
-          className="hub-btn c-green"
-          onClick={explore}
-          disabled={inTown}
-          title={inTown ? "Leave town first" : "Hunt wild Pokémon"}
-        >
-          <span className="icon c-green">🌿</span>
-          <span className="label">Hunt</span>
+      {/* ACTION GRID */}
+      <div className="ed-section-label" style={{ paddingTop: 14 }}>Actions</div>
+      <div className="ed-action-grid">
+        <button className="ed-action-btn ed-act-hunt" onClick={explore} disabled={inTown} title={inTown ? "Leave town first" : "Hunt wild Pokémon"}>
+          <span className="ico">🐲</span><span className="lbl">HUNT</span>
         </button>
-        <button
-          className="hub-btn c-pink"
-          onClick={() => {
-            if (!inTown) {
-              dispatch({ type: "TOAST", text: "Find a town to visit the PokéCenter." });
-              return;
-            }
-            dispatch({ type: "LOG", lines: [`Entered ${loc.name} PokéCenter.`] });
-            goTo("center");
-          }}
-        >
-          <span className="icon c-pink">🏥</span>
-          <span className="label">Center</span>
+        <button className="ed-action-btn ed-act-center" onClick={() => {
+          if (!inTown) { dispatch({ type: "TOAST", text: "Find a town to visit the PokéCenter." }); return; }
+          dispatch({ type: "LOG", lines: [`Entered ${loc.name} PokéCenter.`] });
+          goTo("center");
+        }}>
+          <span className="ico">💗</span><span className="lbl">CENTER</span>
         </button>
-        <button
-          className="hub-btn c-orange"
-          onClick={() => {
-            if (!inTown) {
-              dispatch({ type: "TOAST", text: "Find a town to visit the PokéMart." });
-              return;
-            }
-            dispatch({ type: "LOG", lines: [`Entered ${loc.name} PokéMart.`] });
-            goTo("mart");
-          }}
-        >
-          <span className="icon c-orange">🛒</span>
-          <span className="label">Store</span>
+        <button className="ed-action-btn ed-act-store" onClick={() => {
+          if (!inTown) { dispatch({ type: "TOAST", text: "Find a town to visit the PokéMart." }); return; }
+          dispatch({ type: "LOG", lines: [`Entered ${loc.name} PokéMart.`] });
+          goTo("mart");
+        }}>
+          <span className="ico">🛒</span><span className="lbl">STORE</span>
         </button>
-
-        <button className="hub-btn c-purple" onClick={() => goTo("pokedex")}>
-          <span className="icon c-purple">📖</span>
-          <span className="label">Dex</span>
+        <button className="ed-action-btn ed-act-dex" onClick={() => goTo("pokedex")}>
+          <span className="ico">📖</span><span className="lbl">DEX</span>
         </button>
-        <button
-          className="hub-btn c-yellow"
-          onClick={() => {
-            if (!gym) {
-              dispatch({ type: "TOAST", text: "No Gym in this location." });
-              return;
-            }
-            dispatch({ type: "LOG", lines: [`Approached ${gym.name}'s Gym.`] });
-            goTo("gym");
-          }}
-          disabled={!gym}
-        >
-          <span className="icon c-yellow">🏟</span>
-          <span className="label">Gym</span>
+        <button className="ed-action-btn ed-act-gym" onClick={() => {
+          if (!gym) { dispatch({ type: "TOAST", text: "No Gym in this location." }); return; }
+          dispatch({ type: "LOG", lines: [`Approached ${gym.name}'s Gym.`] });
+          goTo("gym");
+        }} disabled={!gym}>
+          <span className="ico">🏆</span><span className="lbl">GYM</span>
         </button>
-        <button className="hub-btn c-cyan" onClick={() => goTo("card")}>
-          <span className="icon c-cyan">🪪</span>
-          <span className="label">Card</span>
+        <button className="ed-action-btn ed-act-card" onClick={() => goTo("card")}>
+          <span className="ico">🪪</span><span className="lbl">CARD</span>
         </button>
-
-        <button className="hub-btn c-pink" onClick={() => goTo("pokedex")}>
-          <span className="icon c-pink">⭐</span>
-          <span className="label">Caught</span>
+        <button className="ed-action-btn ed-act-pvp" onClick={() => goTo("pvp")}>
+          <span className="ico">⚔</span><span className="lbl">PVP</span>
         </button>
-        <button className="hub-btn c-blue" onClick={() => goTo("pvp")}>
-          <span className="icon c-blue">⚔</span>
-          <span className="label">PVP</span>
-        </button>
-        <button className="hub-btn c-gold" onClick={() => goTo("card")}>
-          <span className="icon c-gold">👤</span>
-          <span className="label">Trainer</span>
+        {active && (
+          <button className="ed-action-btn ed-act-dex" onClick={() => dispatch({ type: "OPEN_SUMMARY", uid: active.uid })}>
+            <span className="ico" style={{ color: typeColor(SPECIES[active.speciesId].type[0]) }}>★</span>
+            <span className="lbl">SUMMARY</span>
+          </button>
+        )}
+        <button className="ed-action-btn ed-act-center" onClick={() => goTo("settings")}>
+          <span className="ico">⚙</span><span className="lbl">SETTINGS</span>
         </button>
       </div>
 
-      <div
-        className="text-[10px] font-mono-pq text-center px-2 mt-1"
-        style={{ color: "#71717a" }}
-      >
+      <div className="font-mono-pq text-[10px] text-center px-2 mt-3" style={{ color: "#71717a" }}>
         BADGES: {state.badges.length === 0 ? "none yet" : state.badges.join(" • ")}
       </div>
     </div>

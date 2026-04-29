@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pokémon — Eternal Day</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg-base: #07070a;
+      --bg-card: #111116;
+      --bg-elevated: #1a1a22;
+      --text-main: #f0f0ff;
+      --text-muted: #6b6b80;
+      --border: #1e1e2e;
+      --border-bright: #2e2e45;
+      --c-pink: #f472b6;
+      --c-pink-glow: rgba(244,114,182,0.3);
+      --c-green: #4ade80;
+      --c-green-glow: rgba(74,222,128,0.25);
+      --c-orange: #fb923c;
+      --c-purple: #c084fc;
+      --c-blue: #60a5fa;
+      --c-yellow: #fbbf24;
+      --c-yellow-glow: rgba(251,191,36,0.3);
+      --c-cyan: #22d3ee;
+      --c-red: #f87171;
+      --font-pixel: 'Press Start 2P', monospace;
+      --font-hud: 'Orbitron', monospace;
+      --font-body: 'Inter', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #000;
+      color: var(--text-main);
+      font-family: var(--font-body);
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 400px;
+      background: var(--bg-base);
+      min-height: 100vh;
+      padding-bottom: 24px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* subtle scanline texture */
+    .app::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      max-width: 400px;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px
+      );
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    /* TOP BAR */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 16px 12px;
+      background: linear-gradient(180deg, rgba(244,114,182,0.06) 0%, transparent 100%);
+      border-bottom: 1px solid var(--border);
+      position: relative;
+    }
+    .top-bar::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--c-pink), transparent);
+      opacity: 0.4;
+    }
+    .game-title {
+      font-family: var(--font-pixel);
+      font-size: 10px;
+      color: var(--c-pink);
+      text-shadow: 0 0 14px var(--c-pink-glow), 0 0 30px rgba(244,114,182,0.15);
+      letter-spacing: 0.5px;
+      line-height: 1.5;
+    }
+    .location-line {
+      font-family: var(--font-hud);
+      font-size: 9px;
+      color: var(--c-cyan);
+      margin-top: 5px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      letter-spacing: 1px;
+      opacity: 0.85;
+    }
+    .location-line .sep { color: var(--text-muted); }
+    .coin-pill {
+      background: linear-gradient(135deg, #92400e, #b45309);
+      color: var(--c-yellow);
+      font-family: var(--font-hud);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 8px 14px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      box-shadow: 0 0 14px var(--c-yellow-glow), inset 0 1px 0 rgba(255,255,255,0.1);
+      border: 1px solid rgba(251,191,36,0.3);
+      letter-spacing: 0.5px;
+    }
+
+    /* STAT ROW */
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .stat-pill {
+      background: var(--bg-card);
+      border: 1px solid var(--border-bright);
+      border-radius: 10px;
+      padding: 8px 4px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-pill::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+    }
+    .stat-pill .s-label {
+      font-family: var(--font-hud);
+      font-size: 6px;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .stat-pill .s-value {
+      font-family: var(--font-hud);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--c-yellow);
+      text-shadow: 0 0 8px var(--c-yellow-glow);
+    }
+
+    /* CITY CARD */
+    .city-card {
+      margin: 12px 16px 0;
+      border-radius: 20px;
+      border: 1px solid var(--border-bright);
+      overflow: hidden;
+      background: var(--bg-card);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+    .city-img-wrap {
+      position: relative;
+      height: 148px;
+      overflow: hidden;
+      background: linear-gradient(180deg,
+        #020818 0%, #050e2a 30%, #0a1a3e 55%,
+        #0d2340 70%, #0f2918 85%, #0a1f12 100%);
+    }
+    .stars {
+      position: absolute; inset: 0;
+      background-image:
+        radial-gradient(1.5px 1.5px at 8% 12%, rgba(255,255,255,0.9) 0%, transparent 100%),
+        radial-gradient(1px 1px at 18% 8%, rgba(255,255,255,0.7) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 28% 18%, rgba(255,255,255,0.8) 0%, transparent 100%),
+        radial-gradient(1px 1px at 38% 6%, rgba(255,255,255,0.6) 0%, transparent 100%),
+        radial-gradient(1px 1px at 48% 14%, rgba(255,255,255,0.9) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 60% 9%, rgba(255,255,255,0.7) 0%, transparent 100%),
+        radial-gradient(1px 1px at 70% 20%, rgba(255,255,255,0.8) 0%, transparent 100%),
+        radial-gradient(1px 1px at 80% 5%, rgba(255,255,255,0.6) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 88% 16%, rgba(255,255,255,0.9) 0%, transparent 100%),
+        radial-gradient(1px 1px at 95% 11%, rgba(255,255,255,0.7) 0%, transparent 100%),
+        radial-gradient(1px 1px at 14% 30%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 52% 25%, rgba(255,255,255,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 76% 28%, rgba(255,255,255,0.4) 0%, transparent 100%);
+      animation: twinkle 4s ease-in-out infinite alternate;
+    }
+    @keyframes twinkle { from { opacity:0.7; } to { opacity:1; } }
+
+    .moon {
+      position: absolute;
+      top: 14px; right: 28px;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fffde7, #fbbf24 60%, #92400e);
+      box-shadow: 0 0 16px rgba(251,191,36,0.6), 0 0 40px rgba(251,191,36,0.2);
+    }
+    .aurora {
+      position: absolute; top: 0; left: 0; right: 0; height: 60%;
+      background: linear-gradient(180deg,
+        transparent 0%, rgba(74,222,128,0.04) 40%,
+        rgba(34,211,238,0.06) 70%, transparent 100%);
+      animation: aurora 6s ease-in-out infinite alternate;
+    }
+    @keyframes aurora { from { opacity:0.5; transform:translateX(-5px); } to { opacity:1; transform:translateX(5px); } }
+
+    .mountains-back {
+      position: absolute; bottom: 28px; left: 0; right: 0;
+      height: 70px; display: flex; align-items: flex-end;
+    }
+    .mt { width:0; height:0; border-style:solid; flex-shrink:0; }
+
+    .ground {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 22px;
+      background: linear-gradient(180deg, #0d2010 0%, #061008 100%);
+    }
+    .ground::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(74,222,128,0.4), transparent);
+    }
+
+    .skyline {
+      position: absolute; bottom: 20px; left: 0; right: 0;
+      display: flex; align-items: flex-end; gap: 2px; padding: 0 6px;
+    }
+    .bld {
+      background: linear-gradient(180deg, #0d1520 0%, #060c14 100%);
+      border: 1px solid #1a2535;
+      border-bottom: none;
+      flex-shrink: 0; position: relative;
+    }
+    .bld::after {
+      content: '';
+      position: absolute;
+      top: 8px; left: 3px; right: 3px; height: 4px;
+      background: repeating-linear-gradient(
+        90deg, rgba(251,191,36,0.5) 0px, rgba(251,191,36,0.5) 3px,
+        transparent 3px, transparent 6px);
+    }
+    .bld-tall::before {
+      content: '';
+      position: absolute;
+      top: 18px; left: 3px; right: 3px; height: 4px;
+      background: repeating-linear-gradient(
+        90deg, rgba(96,165,250,0.4) 0px, rgba(96,165,250,0.4) 3px,
+        transparent 3px, transparent 6px);
+    }
+
+    .city-name-badge {
+      position: absolute; top: 10px; left: 12px;
+      background: rgba(7,7,10,0.8);
+      border: 1px solid rgba(34,211,238,0.3);
+      border-radius: 8px; padding: 5px 10px;
+      font-family: var(--font-hud);
+      font-size: 8px; font-weight: 700;
+      color: var(--c-cyan);
+      backdrop-filter: blur(6px);
+      display: flex; align-items: center; gap: 6px;
+      letter-spacing: 1px;
+      text-shadow: 0 0 8px rgba(34,211,238,0.5);
+    }
+    .city-name-badge i { color: var(--c-yellow); font-size: 9px; }
+
+    .dialogue-box {
+      padding: 12px 16px 14px;
+      border-top: 1px solid var(--border-bright);
+      background: linear-gradient(180deg, rgba(251,191,36,0.03) 0%, transparent 100%);
+      position: relative;
+    }
+    .dialogue-box::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(251,191,36,0.3), transparent);
+    }
+    .dialogue-speaker {
+      font-family: var(--font-hud);
+      font-size: 9px; font-weight: 700;
+      color: var(--c-yellow);
+      margin-bottom: 6px;
+      text-shadow: 0 0 8px var(--c-yellow-glow);
+      letter-spacing: 0.5px;
+    }
+    .dialogue-text {
+      font-family: var(--font-pixel);
+      font-size: 7px;
+      color: rgba(240,240,255,0.85);
+      line-height: 2;
+    }
+    .cursor {
+      display: inline-block; width: 7px; height: 10px;
+      background: var(--c-yellow); margin-left: 2px;
+      vertical-align: middle;
+      animation: blink 1s step-end infinite;
+      box-shadow: 0 0 6px var(--c-yellow-glow);
+    }
+    @keyframes blink { 50% { opacity:0; } }
+
+    /* TEAM ROW */
+    .team-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(74,222,128,0.03) 0%, transparent 100%);
+    }
+    .team-row-label {
+      font-family: var(--font-hud);
+      font-size: 7px; font-weight: 700;
+      color: var(--text-muted);
+      white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: 1px; margin-right: 2px;
+    }
+    .sprite-slot {
+      width: 46px; height: 46px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-bright);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; flex-shrink: 0;
+      transition: all 0.2s; position: relative;
+    }
+    .sprite-slot.active {
+      border-color: var(--c-green);
+      box-shadow: 0 0 12px var(--c-green-glow), inset 0 0 8px rgba(74,222,128,0.06);
+    }
+    .sprite-slot.active::after {
+      content: '';
+      position: absolute; bottom: 2px; left: 50%;
+      transform: translateX(-50%);
+      width: 6px; height: 2px;
+      border-radius: 1px;
+      background: var(--c-green);
+      box-shadow: 0 0 4px var(--c-green);
+    }
+    .sprite-slot img { width: 38px; height: 38px; object-fit: contain; image-rendering: pixelated; }
+    .sprite-slot.empty { opacity: 0.2; border-style: dashed; }
+    .sprite-slot.empty i { color: var(--text-muted); font-size: 12px; }
+
+    /* TOWN MAP */
+    .section-label {
+      font-family: var(--font-hud);
+      font-size: 8px; font-weight: 700;
+      color: var(--text-muted);
+      padding: 14px 16px 8px;
+      text-transform: uppercase; letter-spacing: 2px;
+    }
+    .map-btns {
+      display: grid; grid-template-columns: 1fr 1.4fr 1fr;
+      gap: 8px; padding: 0 16px;
+    }
+    .map-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-bright);
+      border-radius: 12px; padding: 13px 6px;
+      font-family: var(--font-hud);
+      font-size: 8px; font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer; display: flex;
+      align-items: center; justify-content: center;
+      gap: 6px; letter-spacing: 0.5px; transition: all 0.2s;
+    }
+    .map-btn:hover { background: var(--bg-elevated); color: var(--text-main); }
+    .map-btn.travel {
+      background: linear-gradient(135deg, rgba(74,222,128,0.12), rgba(74,222,128,0.06));
+      border-color: rgba(74,222,128,0.45); color: var(--c-green);
+      box-shadow: 0 0 12px rgba(74,222,128,0.12);
+      text-shadow: 0 0 8px var(--c-green-glow);
+    }
+    .map-btn.travel:hover { background: rgba(74,222,128,0.2); }
+    .map-btn.fast { border-color: rgba(96,165,250,0.4); color: var(--c-blue); }
+    .map-btn.fast:hover { background: rgba(96,165,250,0.08); }
+
+    /* ACTION GRID */
+    .action-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 8px; padding: 12px 16px 0;
+    }
+    .action-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-bright);
+      border-radius: 16px; padding: 20px 8px 14px;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 10px;
+      cursor: pointer; position: relative;
+      overflow: hidden; transition: all 0.2s;
+    }
+    .action-btn::after {
+      content: ''; position: absolute;
+      top: 0; left: 0; right: 0; height: 1px; opacity: 0.5;
+    }
+    .action-btn::before {
+      content: ''; position: absolute;
+      left: 0; top: 12%; bottom: 12%;
+      width: 3px; border-radius: 2px;
+    }
+    .action-btn:hover {
+      background: var(--bg-elevated);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    }
+    .action-btn i { font-size: 22px; }
+    .action-btn span {
+      font-family: var(--font-hud);
+      font-size: 7px; font-weight: 700;
+      color: rgba(240,240,255,0.7); letter-spacing: 1px;
+    }
+
+    .btn-hunt i   { color: var(--c-green); filter: drop-shadow(0 0 6px var(--c-green-glow)); }
+    .btn-hunt::before  { background: var(--c-green); }
+    .btn-hunt::after   { background: linear-gradient(90deg, var(--c-green), transparent); }
+
+    .btn-center i { color: var(--c-pink); filter: drop-shadow(0 0 6px var(--c-pink-glow)); }
+    .btn-center::before { background: var(--c-pink); }
+    .btn-center::after  { background: linear-gradient(90deg, var(--c-pink), transparent); }
+
+    .btn-store i  { color: var(--c-orange); filter: drop-shadow(0 0 6px rgba(251,146,60,0.3)); }
+    .btn-store::before  { background: var(--c-orange); }
+    .btn-store::after   { background: linear-gradient(90deg, var(--c-orange), transparent); }
+
+    .btn-dex i    { color: var(--c-purple); filter: drop-shadow(0 0 6px rgba(192,132,252,0.3)); }
+    .btn-dex::before    { background: var(--c-purple); }
+    .btn-dex::after     { background: linear-gradient(90deg, var(--c-purple), transparent); }
+
+    .btn-gym i    { color: var(--c-yellow); filter: drop-shadow(0 0 6px var(--c-yellow-glow)); }
+    .btn-gym::before    { background: var(--c-yellow); }
+    .btn-gym::after     { background: linear-gradient(90deg, var(--c-yellow), transparent); }
+
+    .btn-card i   { color: var(--c-cyan); filter: drop-shadow(0 0 6px rgba(34,211,238,0.3)); }
+    .btn-card::before   { background: var(--c-cyan); }
+    .btn-card::after    { background: linear-gradient(90deg, var(--c-cyan), transparent); }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div>
+      <div class="game-title">POKéMON — ETERNAL DAY</div>
+      <div class="location-line">
+        <i class="fa-solid fa-circle" style="font-size:6px;color:var(--c-pink);"></i>
+        KANTO <span class="sep">·</span> Pewter City <span class="sep">·</span> TOWN
+      </div>
+    </div>
+    <div class="coin-pill">
+      <i class="fa-solid fa-coins"></i> 1,450
+    </div>
+  </div>
+
+  <!-- STAT ROW -->
+  <div class="stat-row">
+    <div class="stat-pill">
+      <span class="s-label">₽ Money</span>
+      <span class="s-value">1.4k</span>
+    </div>
+    <div class="stat-pill">
+      <span class="s-label">Balls</span>
+      <span class="s-value">12</span>
+    </div>
+    <div class="stat-pill">
+      <span class="s-label">Pots</span>
+      <span class="s-value">05</span>
+    </div>
+    <div class="stat-pill">
+      <span class="s-label">Badges</span>
+      <span class="s-value" style="color:var(--c-cyan);">01</span>
+    </div>
+  </div>
+
+  <!-- CITY CARD -->
+  <div class="city-card">
+    <div class="city-img-wrap">
+      <div class="stars"></div>
+      <div class="aurora"></div>
+      <div class="moon"></div>
+      <div class="mountains-back">
+        <div class="mt" style="border-left:55px solid transparent;border-right:55px solid transparent;border-bottom:58px solid #091528;margin-left:10px;"></div>
+        <div class="mt" style="border-left:70px solid transparent;border-right:70px solid transparent;border-bottom:72px solid #0b1a30;margin-left:-20px;"></div>
+        <div class="mt" style="border-left:50px solid transparent;border-right:50px solid transparent;border-bottom:52px solid #091528;margin-left:40px;"></div>
+        <div class="mt" style="border-left:60px solid transparent;border-right:60px solid transparent;border-bottom:65px solid #0d1f38;margin-left:-10px;"></div>
+      </div>
+      <div class="skyline">
+        <div class="bld bld-tall" style="width:18px;height:52px;"></div>
+        <div class="bld" style="width:24px;height:64px;"></div>
+        <div class="bld bld-tall" style="width:14px;height:42px;"></div>
+        <div class="bld bld-tall" style="width:28px;height:70px;"></div>
+        <div class="bld" style="width:16px;height:48px;"></div>
+        <div style="flex:1"></div>
+        <div class="bld" style="width:16px;height:44px;"></div>
+        <div class="bld bld-tall" style="width:26px;height:68px;"></div>
+        <div class="bld" style="width:20px;height:55px;"></div>
+        <div class="bld bld-tall" style="width:22px;height:60px;"></div>
+        <div class="bld" style="width:14px;height:38px;"></div>
+      </div>
+      <div class="ground"></div>
+      <div class="city-name-badge">
+        <i class="fa-solid fa-location-dot"></i> PEWTER CITY
+      </div>
+    </div>
+    <div class="dialogue-box">
+      <div class="dialogue-speaker">Prof. Oak</div>
+      <div class="dialogue-text">
+        Welcome to Pewter City!<br>
+        The Gym Leader here uses<br>
+        Rock-type Pokémon.<span class="cursor"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEAM -->
+  <div class="team-row">
+    <span class="team-row-label">Team:</span>
+    <div class="sprite-slot active">
+      <img src="https://projectpokemon.org/images/normal-sprite/charmander.gif" alt="Charmander">
+    </div>
+    <div class="sprite-slot">
+      <img src="https://projectpokemon.org/images/normal-sprite/pidgey.gif" alt="Pidgey">
+    </div>
+    <div class="sprite-slot empty"><i class="fa-solid fa-plus"></i></div>
+    <div class="sprite-slot empty"><i class="fa-solid fa-plus"></i></div>
+    <div class="sprite-slot empty"><i class="fa-solid fa-plus"></i></div>
+    <div class="sprite-slot empty"><i class="fa-solid fa-plus"></i></div>
+  </div>
+
+  <!-- TOWN MAP -->
+  <div class="section-label">Town Map</div>
+  <div class="map-btns">
+    <button class="map-btn"><i class="fa-solid fa-arrow-left"></i> BACK</button>
+    <button class="map-btn travel"><i class="fa-solid fa-play"></i> TRAVEL</button>
+    <button class="map-btn fast"><i class="fa-solid fa-bolt"></i> FAST</button>
+  </div>
+
+  <!-- ACTION GRID -->
+  <div class="action-grid">
+    <div class="action-btn btn-hunt"><i class="fa-solid fa-dragon"></i><span>HUNT</span></div>
+    <div class="action-btn btn-center"><i class="fa-solid fa-heart-pulse"></i><span>CENTER</span></div>
+    <div class="action-btn btn-store"><i class="fa-solid fa-cart-shopping"></i><span>STORE</span></div>
+    <div class="action-btn btn-dex"><i class="fa-solid fa-book-open"></i><span>DEX</span></div>
+    <div class="action-btn btn-gym"><i class="fa-solid fa-trophy"></i><span>GYM</span></div>
+    <div class="action-btn btn-card"><i class="fa-solid fa-id-card"></i><span>CARD</span></div>
+  </div>
+
+</div>
+</body>
+</html>
